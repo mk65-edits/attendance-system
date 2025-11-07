@@ -1,0 +1,89 @@
+{% extends "dashboard_base.html" %}
+{% block title %}Agent Broadcasts{% endblock %}
+
+{% block dashboard_content %}
+<div class="container py-3">
+  <h5 class="fw-bold mb-3">
+    <i class="bi bi-megaphone text-primary me-2"></i>All Broadcasts
+  </h5>
+
+  {% if broadcasts %}
+  <div class="row g-2">
+    {% for date, msgs in broadcasts.items() %}
+      {% for b in msgs %}
+        {% set viewed = None %}
+        {% if b.id in view_summary %}
+          {% for v in view_summary[b.id].details %}
+            {% if v.user_id == current_user.id %}
+              {% set viewed = v %}
+            {% endif %}
+          {% endfor %}
+        {% endif %}
+
+        <div class="col-12">
+          <div class="card shadow-sm border-0 border-start border-success border-3 bg-light compact-card" id="card-{{ b.id }}">
+            <div class="card-body py-2 px-3">
+
+              <!-- Title + Sender + Time -->
+              <div class="d-flex justify-content-between align-items-center mb-1">
+                <h6 class="fw-bold text-success mb-0 small">
+                  <i class="bi bi-bookmark-check-fill me-1"></i>{{ b.title or '—' }}
+                </h6>
+                <small class="text-muted text-end lh-sm">
+                  <span class="fw-semibold">{{ b.sender_name }}</span><br>
+                  <i class="bi bi-clock me-1"></i>{{ b.created_at.strftime("%d %b %Y, %I:%M %p") }}
+                </small>
+              </div>
+
+              <!-- Message -->
+              <p class="text-dark mb-1 small">
+                <i class="bi bi-megaphone-fill text-primary me-1"></i>{{ b.message }}
+              </p>
+
+              <!-- Viewed info -->
+              <div class="text-end mt-1">
+                {% if viewed %}
+                  <span class="badge bg-success-subtle text-success border border-success px-2 py-1 small">
+                    👀 {{ viewed.seen_at.strftime("%d %b, %I:%M %p") }}
+                  </span>
+                {% else %}
+                  <span class="badge bg-secondary small">Unseen</span>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+        </div>
+      {% endfor %}
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="text-center text-muted py-5">
+    <i class="bi bi-inbox fs-1 mb-3"></i>
+    <p>No broadcasts available yet.</p>
+  </div>
+  {% endif %}
+</div>
+
+<style>
+/* ✅ Compact broadcast cards */
+.compact-card {
+  border-radius: 6px;
+}
+.compact-card .card-body {
+  line-height: 1.2;
+}
+.compact-card h6 {
+  font-size: 0.95rem;
+}
+.compact-card p {
+  font-size: 0.9rem;
+}
+.compact-card small {
+  font-size: 0.8rem;
+}
+.badge.small {
+  font-size: 0.7rem;
+  font-weight: 500;
+}
+</style>
+{% endblock %}

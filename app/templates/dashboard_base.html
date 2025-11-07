@@ -1,0 +1,393 @@
+{% extends "base.html" %}
+{% block title %}Dashboard - Office Connect{% endblock %}
+{% block content %}
+<!-- SocketIO client (make sure socket.io.js is loaded). If using CDN: -->
+<script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+
+
+<style>
+:root {
+  --sidebar-bg: #0f1724;
+  --sidebar-hover: #14243a;
+  --accent: #2563eb;
+  --muted: #cbd5e1;
+  --header-h: 56px;
+  --content-bg: #f8fafc;
+}
+
+body {
+  font-family: 'Times New Roman', Times, serif !important;
+  margin: 0;
+  overflow-x: hidden;
+}
+
+
+/* Sidebar */
+.dashboard-sidebar {
+  position: fixed;
+  top: var(--header-h);
+  left: 0;
+  bottom: 0;
+  width: 220px;
+  background: var(--sidebar-bg);
+  color: var(--muted);
+  padding-top: 5px;
+  transition: width 240ms ease, transform 240ms ease;
+  box-shadow: 2px 0 18px rgba(2,6,23,0.25);
+  overflow-y: auto;
+  z-index: 1050;
+}
+.dashboard-sidebar.collapsed { width: 64px; }
+.dashboard-sidebar.collapsed .label { display: none; }
+
+/* Sidebar Items */
+.sidebar-list { list-style: none; margin: 0; padding: 6px; }
+.sidebar-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  color: var(--muted);
+  text-decoration: none;
+  border-radius: 8px;
+  margin: 6px 8px;
+  transition: background 160ms, color 160ms;
+  font-size: 0.95rem;
+}
+.sidebar-item i {
+  font-size: 1.1rem;
+  width: 20px;
+  text-align: center;
+}
+.sidebar-item:hover { background: var(--sidebar-hover); color: #fff; }
+.sidebar-item.active {
+  background: linear-gradient(90deg, rgba(37,99,235,0.15), rgba(37,99,235,0.06));
+  border-left: 3px solid var(--accent);
+  color: #fff;
+}
+
+/* Sidebar Toggle */
+.sidebar-toggle {
+  display: flex;
+  justify-content: center;
+  padding: 8px 0;
+}
+.sidebar-toggle button {
+  background: transparent;
+  border: 1px dashed rgba(255,255,255,0.1);
+  color: var(--muted);
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+}
+.sidebar-toggle button:hover {
+  color: #fff;
+  border-color: rgba(255,255,255,0.2);
+}
+
+/* Content */
+.dashboard-content {
+  margin-left: 200px;
+  flex: 1;
+  padding: 25px;
+  background: var(--content-bg);
+  height: calc(100vh - var(--header-h));
+  overflow-y: auto;
+  transition: margin-left 240ms ease;
+}
+.dashboard-sidebar.collapsed ~ .dashboard-content {
+  margin-left: 64px;
+}
+
+/* Navbar Adjustments for Small Devices */
+@media (max-width: 992px) {
+  .dashboard-sidebar { width: 64px; }
+  .dashboard-sidebar.expanded-mobile { width: 200px; }
+  .dashboard-sidebar.expanded-mobile ~ .dashboard-content {
+    margin-left: 200px;
+  }
+  .dashboard-content { margin-left: 64px; padding: 16px; }
+}
+
+/* ✅ Right align all table content */
+.table th, .table td {
+  text-align: left;
+  vertical-align: middle;
+}
+
+/* Keep header titles neat */
+.table th {
+  white-space: nowrap;
+}
+
+/* Compact buttons alignment */
+.btn-sm i {
+  margin-left: 3px;
+}
+
+/* Responsive fix for small screens */
+@media (max-width: 768px) {
+  .row.g-2 > div {
+    margin-bottom: 6px;
+  }
+  .text-md-end {
+    text-align: center !important;
+  }
+}
+@media (max-width: 768px) {
+  .dashboard-sidebar {
+    transform: translateX(-100%);
+  }
+  .dashboard-sidebar.expanded-mobile {
+    transform: translateX(0);
+    width: 200px;
+  }
+  .dashboard-content {
+    margin-left: 0;
+    padding: 14px;
+  }
+}
+
+/* Ultra Small Phones */
+@media (max-width: 480px) {
+  .sidebar-item { font-size: 0.85rem; padding: 8px 10px; }
+  .dashboard-content { padding: 12px 10px; }
+}
+/* ✅ Universal Table Container */
+.table-responsive {
+  max-height: 72vh; /* vertical scroll area */
+  overflow-y: auto;
+  overflow-x: auto;
+  border-radius: 8px;
+  border: 1px solid #dee2e6;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+}
+/* 🧩 Fix for expandable rows being cut off */
+.report-table.table-responsive {
+  max-height: none !important;
+  overflow: visible !important;
+}
+
+/* ✅ Universal Table Style */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.95rem;
+  text-align: left; /* all data left aligned */
+  background-color: #fff;
+}
+
+/* ✅ Header styling */
+thead th {
+  position: sticky;
+  top: 0;
+  background-color: #212529; /* dark header for contrast */
+  color: white;
+  z-index: 10;
+  font-weight: 600;
+  text-transform: capitalize;
+  white-space: nowrap;
+  padding: 10px 12px;
+}
+
+/* ✅ Table rows */
+tbody td {
+  padding: 80px 12px;
+  border-bottom: 1px solid #dee2e6;
+  vertical-align: middle;
+  color: #333;
+}
+
+/* ✅ Hover effect */
+tbody tr:hover {
+  background-color: #f8f9fa;
+}
+
+/* ✅ Make tables responsive across breakpoints */
+@media (max-width: 992px) {
+  .table-responsive {
+    max-height: 55vh;
+  }
+  table {
+    font-size: 0.9rem;
+  }
+  thead th, tbody td {
+    padding: 6px 8px;
+  }
+}
+
+@media (max-width: 576px) {
+  .table-responsive {
+    max-height: 50vh;
+  }
+  table {
+    font-size: 0.85rem;
+  }
+  thead th, tbody td {
+    padding: 5px 6px;
+    white-space: nowrap;
+  }
+}
+</style>
+
+
+<!-- Layout -->
+<div class="dashboard-layout">
+  <!-- Sidebar -->
+  <nav id="sharedSidebar" class="dashboard-sidebar">
+    <div class="sidebar-toggle">
+      <button id="sidebarToggle" title="Toggle sidebar"> <i class="bi bi-list"></i></button>
+    </div>
+    <ul class="sidebar-list">
+      <li>
+        <a href="{{ url_for(current_user.role + '.dashboard') }}" 
+           class="sidebar-item {% if request.endpoint == current_user.role + '.dashboard' %}active{% endif %}">
+          <i class="bi bi-speedometer2"></i>
+          <span class="label">Dashboard</span>
+        </a>
+      </li>
+
+      {% if current_user.role == 'admin' %}
+      <li><a href="{{ url_for('admin.manage_users') }}" class="sidebar-item {% if request.endpoint == 'admin.manage_users' %}active{% endif %}"><i class="bi bi-person-plus"></i><span class="label">Manage Users</span></a></li>
+      <li><a href="{{ url_for('admin.view_users') }}" class="sidebar-item {% if request.endpoint == 'admin.view_users' %}active{% endif %}"><i class="bi bi-people-fill"></i><span class="label">View All Users</span></a></li>
+      <li><a href="{{ url_for('admin.salary_management') }}" class="sidebar-item {% if request.endpoint == 'admin.salary_management' %}active{% endif %}"><i class="bi bi-cash-stack"></i><span class="label">Salaries</span></a></li>
+      <li><a href="{{ url_for('admin.manage_companies') }}" class="sidebar-item {% if request.endpoint == 'admin.manage_companies' %}active{% endif %}"><i class="bi bi-buildings"></i><span class="label">Companies</span></a></li>
+      <li><a href="{{ url_for('admin.attendance') }}" class="sidebar-item {% if request.endpoint == 'admin.attendance' %}active{% endif %}"><i class="bi bi-calendar-check"></i><span class="label">Attendance</span></a></li>
+      <li><a href="{{ url_for('broadcasts.view_broadcasts') }}" class="sidebar-item {% if request.endpoint == 'broadcasts.view_broadcasts' %}active{% endif %}"><i class="bi bi-buildings"></i><span class="label">Broadcast</span></a></li>
+      {% endif %}
+
+      {% if current_user.role == 'supervisor' %}
+      <li><a href="{{ url_for('supervisor.team_members') }}" class="sidebar-item {% if request.endpoint == 'supervisor.team_members' %}active{% endif %}"><i class="bi bi-people"></i><span class="label">Team Members</span></a></li>
+      <li><a href="{{ url_for('supervisor.attendance_dashboard') }}" class="sidebar-item {% if request.endpoint == 'supervisor.attendance_dashboard' %}active{% endif %}"><i class="bi bi-calendar-check"></i><span class="label">Attendance</span></a></li>
+      <li><a href="{{ url_for('supervisor.supervisor_reports') }}" class="sidebar-item {% if request.endpoint == 'supervisor.supervisor_reports' %}active{% endif %}"><i class="bi bi-cash-stack"></i><span class="label">Reports</span></a></li>
+      <li><a href="{{ url_for('supervisor.broadcast') }}" class="sidebar-item {% if request.endpoint == 'supervisor.broadcast' %}active{% endif %}"><i class="bi bi-buildings"></i><span class="label">Broadcast</span></a></li>
+      <li><a href="{{ url_for('supervisor.salaries') }}" class="sidebar-item {% if request.endpoint == 'supervisor.salaries' %}active{% endif %}"><i class="bi bi-cash-stack"></i><span class="label">Salaries</span></a></li>
+      <li><a href="{{ url_for('supervisor.profile') }}" class="sidebar-item {% if request.endpoint == 'supervisor.profile' %}active{% endif %}"><i class="bi bi-person"></i><span class="label">Profile</span></a></li>
+      <li><a href="{{ url_for('supervisor.profile_pass') }}" class="sidebar-item {% if request.endpoint == 'supervisor.profile_pass' %}active{% endif %}"><i class="bi bi-sliders2"></i><span class="label">Settings</span></a></li>
+      {% endif %}
+
+      {% if current_user.role == 'agent' %}
+      <li><a href="{{ url_for('agent.profile') }}" class="sidebar-item {% if request.endpoint == 'agent.profile' %}active{% endif %}"><i class="bi bi-person"></i><span class="label">Profile</span></a></li>
+      <li><a href="{{ url_for('agent.profile_pass') }}" class="sidebar-item {% if request.endpoint == 'agent.profile_pass' %}active{% endif %}"><i class="bi bi-sliders2"></i><span class="label">Settings</span></a></li>
+      <li><a href="{{ url_for('agent.agent_reports') }}" class="sidebar-item {% if request.endpoint == 'agent.agent_reports' %}active{% endif %}"><i class="bi bi-check-circle-fill"></i><span class="label">Reports</span></a></li>
+      <li><a href="{{ url_for('agent.salaries') }}" class="sidebar-item {% if request.endpoint == 'agent.salaries' %}active{% endif %}"><i class="bi bi-cash-stack"></i><span class="label">Salaries</span></a></li>
+      <li><a href="{{ url_for('agent.view_broadcasts') }}" class="sidebar-item {% if request.endpoint == 'agent.agent_broadcasts' %}active{% endif %}"><i class="bi bi-buildings"></i><span class="label">Broadcast</span></a></li>
+
+      {% endif %}
+    </ul>
+  </nav>
+  
+  <!-- Broadcast modal (Bootstrap) -->
+<div class="modal fade" id="broadcastModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="broadcastTitle">Broadcast</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body" id="broadcastMessage"></div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-primary" id="broadcastAcknowledge">Acknowledge</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+  
+
+  <!-- Main Content -->
+  <main class="dashboard-content" id="dashboardContent">
+    {% block dashboard_content %}{% endblock %}
+  </main>
+</div>
+
+<script>
+(function(){
+  const sidebar = document.getElementById('sharedSidebar');
+  const btn = document.getElementById('sidebarToggle');
+  if (!sidebar || !btn) return;
+
+  const pref = sessionStorage.getItem('oc_sidebar_state');
+  if (pref === 'collapsed') sidebar.classList.add('collapsed');
+
+  btn.addEventListener('click', () => {
+    if (window.innerWidth <= 768) {
+      sidebar.classList.toggle('expanded-mobile');
+    } else {
+      sidebar.classList.toggle('collapsed');
+      sessionStorage.setItem('oc_sidebar_state', sidebar.classList.contains('collapsed') ? 'collapsed' : 'expanded');
+    }
+  });
+
+  document.addEventListener('click', (e) => {
+    if (window.innerWidth <= 768 && sidebar.classList.contains('expanded-mobile')) {
+      const inside = e.composedPath().includes(sidebar) || e.target === btn;
+      if (!inside) sidebar.classList.remove('expanded-mobile');
+    }
+  });
+})();
+
+(function() {
+    // Connect to SocketIO (same origin)
+    const socket = io();
+
+    // When socket connected
+    socket.on('connect', () => {
+        console.log("Socket connected");
+        // optional: request unread broadcasts via AJAX
+        fetch("{{ url_for('broadcasts.unread_broadcasts') }}")
+          .then(r => r.json())
+          .then(list => {
+              if (Array.isArray(list) && list.length > 0) {
+                  // show the most recent unread once
+                  showBroadcast(list[0]);
+              }
+          }).catch(()=>{});
+    });
+
+    // Handler for new incoming broadcast for this user
+    socket.on('new_broadcast', (data) => {
+        // display modal popup
+        showBroadcast(data);
+    });
+
+    // Also a global fallback
+    socket.on('global_broadcast', (data) => {
+        showBroadcast(data);
+    });
+
+    function showBroadcast(data) {
+        if (!data || !data.id) return;
+        // fill modal
+        const title = data.title || (data.company_name ? `${data.company_name} — Announcement` : 'Announcement');
+        document.getElementById('broadcastTitle').innerText = title;
+        document.getElementById('broadcastMessage').innerHTML = `<small class="text-muted">From: ${data.sender_name} — ${new Date(data.created_at).toLocaleString()}</small><hr/>${data.message}`;
+        // show modal (Bootstrap 5)
+        const modalEl = document.getElementById('broadcastModal');
+        const modal = new bootstrap.Modal(modalEl);
+        modal.show();
+
+        // on ack or close mark as seen once
+        const ack = document.getElementById('broadcastAcknowledge');
+        ack.onclick = () => {
+            fetch("{{ url_for('broadcasts.mark_seen') }}", {
+                method: "POST",
+                headers: {"Content-Type":"application/json"},
+                body: JSON.stringify({broadcast_id: data.id})
+            }).finally(() => modal.hide());
+        };
+
+        // Also mark seen when modal closed
+        modalEl.addEventListener('hidden.bs.modal', function handler() {
+            modalEl.removeEventListener('hidden.bs.modal', handler);
+            fetch("{{ url_for('broadcasts.mark_seen') }}", {
+                method: "POST",
+                headers: {"Content-Type":"application/json"},
+                body: JSON.stringify({broadcast_id: data.id})
+            }).catch(()=>{});
+        });
+    }
+})();
+</script>
+
+{% endblock %}

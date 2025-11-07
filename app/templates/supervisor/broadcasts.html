@@ -1,0 +1,161 @@
+{% extends "dashboard_base.html" %}
+{% block title %}Broadcast Messages{% endblock %}
+
+{% block dashboard_content %}
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="dashboard-header d-flex justify-content-between align-items-center mb-3">
+        <h4 class="fw-bold mb-0">
+            <i class="bi bi-megaphone text-danger me-2"></i>Broadcast Center
+        </h4>
+    </div>
+
+<!-- Broadcast History -->
+<div class="accordion" id="broadcastAccordion">
+    {% if broadcasts %}
+        {% for month, records in broadcasts.items() %}
+        <div class="accordion-item border-0 shadow-sm mb-2">
+            <h2 class="accordion-header" id="heading{{ loop.index }}">
+                <button class="accordion-button fw-bold bg-light text-dark" type="button" data-bs-toggle="collapse"
+                        data-bs-target="#collapse{{ loop.index }}" aria-expanded="false" aria-controls="collapse{{ loop.index }}">
+                    <i class="bi bi-calendar3 me-2"></i>{{ month }}
+                </button>
+            </h2>
+
+            <div id="collapse{{ loop.index }}" class="accordion-collapse collapse"
+                 aria-labelledby="heading{{ loop.index }}" data-bs-parent="#broadcastAccordion">
+                <div class="accordion-body p-0">
+                    <div class="accordion" id="dateAccordion{{ loop.index }}">
+                        {% for date, msgs in records.items() %}
+                        <div class="accordion-item border-0">
+                            <h2 class="accordion-header" id="headingDate{{ loop.index }}_{{ loop.index0 }}">
+                                <button class="accordion-button collapsed bg-white" type="button"
+                                        data-bs-toggle="collapse"
+                                        data-bs-target="#collapseDate{{ loop.index }}_{{ loop.index0 }}"
+                                        aria-expanded="false" aria-controls="collapseDate{{ loop.index }}_{{ loop.index0 }}">
+                                    <i class="bi bi-clock-history me-2 text-primary"></i>{{ date }}
+                                </button>
+                            </h2>
+
+                            <div id="collapseDate{{ loop.index }}_{{ loop.index0 }}" class="accordion-collapse collapse"
+                                 aria-labelledby="headingDate{{ loop.index }}_{{ loop.index0 }}"
+                                 data-bs-parent="#dateAccordion{{ loop.index }}">
+                                <div class="accordion-body bg-light">
+                                    {% for b in msgs %}
+                                    {% set time_diff = (current_time - b.created_at).total_seconds() %}
+                                    <div class="card border-0 shadow-sm mb-2">
+                                        <div class="card-body">
+
+                                            <!-- Title + Sender + Time in one line -->
+                                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                                <h6 class="fw-bold text-primary mb-0">
+                                                    <i class="bi bi-bookmark-fill me-1"></i>
+                                                    Title: {{ b.title or '—' }}
+                                                </h6>
+                                                <small class="text-muted text-end">
+                                                    Sent by: {{ b.sender_name }}<br>
+                                                    <i class="bi bi-clock me-1"></i>{{ b.created_at.strftime("%I:%M %p") }}
+                                                </small>
+                                            </div>
+
+                                            <!-- Message and company -->
+                                            <div class="d-flex justify-content-between align-items-start">
+                                                <p class="fw-bold text-dark mb-1">
+                                                    <i class="bi bi-megaphone-fill text-danger me-1"></i>
+                                                    Message: {{ b.message }}
+                                                </p>
+                                                <div class="text-end ms-3">
+                                                    <small class="text-muted d-block mb-1">
+                                                        <i class="bi bi-building me-1"></i>
+                                                        {% if b.company_name %}
+                                                            {{ b.company_name }}
+                                                        {% else %}
+                                                            All Companies
+                                                        {% endif %}
+                                                    </small>
+                                                    <span class="badge bg-secondary text-capitalize">{{ b.target }}</span>
+                                                </div>
+                                            </div>
+
+                                            <!-- Viewer count and button aligned to right -->
+                                            <div class="d-flex justify-content-end align-items-center mt-2">
+                                                <span class="badge bg-info text-dark">
+                                                    👀 Viewed by {{ view_summary[b.id].count if b.id in view_summary else 0 }} users
+                                                </span>
+
+                                                {% if b.id in view_summary and view_summary[b.id].count > 0 %}
+                                                <button class="btn btn-sm btn-outline-secondary ms-2" type="button"
+                                                        data-bs-toggle="collapse" data-bs-target="#viewers-{{ b.id }}">
+                                                    Show Viewers
+                                                </button>
+                                                {% endif %}
+                                            </div>
+
+                                            <!-- Viewer details collapsible -->
+                                            {% if b.id in view_summary and view_summary[b.id].count > 0 %}
+                                            <div class="collapse mt-2" id="viewers-{{ b.id }}">
+                                                <table class="table table-sm table-bordered align-middle mb-0">
+                                                    <thead class="table-light">
+                                                        <tr>
+                                                            <th>Full Name</th>
+                                                            <th>Username</th>
+                                                            <th>Role</th>
+                                                            <th>Company</th>
+                                                            <th>Viewed At</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        {% for v in view_summary[b.id].details %}
+                                                        <tr>
+                                                            <td>{{ v.full_name }}</td>
+                                                            <td>{{ v.username }}</td>
+                                                            <td>{{ v.role }}</td>
+                                                            <td>{{ v.company }}</td>
+                                                            <td>{{ v.seen_at }}</td>
+                                                        </tr>
+                                                        {% endfor %}
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                            {% endif %}
+
+                                            <!-- Delete button (only within 10 minutes) -->
+                                            {% if time_diff <= 600 %}
+                                            <form action="{{ url_for('broadcasts.delete_broadcast', id=b.id) }}" method="post" class="mt-3">
+                                                <button class="btn btn-sm btn-danger">
+                                                    <i class="bi bi-trash"></i> Delete
+                                                </button>
+                                            </form>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    {% else %}
+        <div class="text-center text-muted py-5">
+            <i class="bi bi-inbox fs-1 mb-3"></i>
+            <p>No broadcasts found yet.</p>
+        </div>
+    {% endif %}
+</div>
+
+
+</div>
+
+
+<!-- SocketIO Real-time Update -->
+<script>
+    const socket = io();
+    socket.on("admin_broadcast_update", () => {
+        location.reload();
+    });
+</script>
+{% endblock %}

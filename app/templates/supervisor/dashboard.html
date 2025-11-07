@@ -1,0 +1,106 @@
+{% extends "dashboard_base.html" %}
+{% block title %}Supervisor Dashboard - Office Connect{% endblock %}
+
+{% block dashboard_content %}
+<style>
+body {
+    font-family: 'Times New Roman', serif !important;
+}
+
+/* ---------------- Main Content ---------------- */
+.supervisor-main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.summary-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 16px;
+}
+
+.summary-card {
+    background: #fff;
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    text-align: center;
+    transition: transform 0.2s, box-shadow 0.2s;
+    cursor: pointer;
+    text-decoration: none;
+}
+
+.summary-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+}
+
+.summary-card h6 {
+    color: #4b5563;
+    margin-bottom: 8px;
+    font-family: 'Times New Roman', serif !important;
+}
+
+.summary-card .value {
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: #2563eb;
+}
+
+</style>
+
+<div class="supervisor-dashboard-wrapper">
+    <!-- Sidebar Placeholder (if needed later) -->
+
+    <!-- Main Content -->
+    <main class="supervisor-main">
+        <!-- Welcome Header -->
+        <div class="mb-4 text-center border-bottom pb-3">
+            <h5 class="fw-bold mb-2">Welcome, {{ current_user.user_full_name() }} 👋</h5>
+            <p class="text-muted mb-0">Shift: <strong>{{ current_user.shift|capitalize }}</strong> | Date: {{ current_date.strftime('%B %d, %Y') }}</p>
+        </div>
+
+
+
+        <!-- Summary Cards -->
+        <div class="summary-cards">
+            <a href="{{ url_for('supervisor.team_members') }}" class="summary-card">
+                <h6>My Team Members</h6>
+                <div class="value">{{ stats.team_members }}</div>
+            </a>
+            <a href="{{ url_for('supervisor.attendance_dashboard') }}" class="summary-card">
+                <h6>Today's Presents</h6>
+                <div class="value">{{ stats.presents }}</div>
+            </a>
+            <a href="{{ url_for('supervisor.attendance_dashboard') }}" class="summary-card">
+                <h6>Late Arrivals</h6>
+                <div class="value">{{ stats.lates }}</div>
+            </a>
+            <a href="{{ url_for('supervisor.attendance_dashboard') }}" class="summary-card">
+                <h6>Today Off's</h6>
+                <div class="value">{{ stats.offs }}</div>
+            </a>
+            <a href="{{ url_for('supervisor.attendance_dashboard') }}" class="summary-card">
+                <h6>Absentees</h6>
+                <div class="value">{{ stats.absents }}</div>
+            </a>
+
+            <div class="summary-card"> 
+                <h6>Average Performance</h6> 
+                    <div class="value">{{ stats.performance }}%</div> 
+            </div>
+
+        </div>
+    </main>
+</div>
+
+<script>
+function toggleSidebar() {
+    const sidebar = document.getElementById('supervisorSidebar');
+    sidebar.classList.toggle('expanded');
+}
+</script>
+
+{% endblock %}

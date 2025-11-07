@@ -1,0 +1,172 @@
+{% extends "dashboard_base.html" %}
+{% block title %}Attendance Management{% endblock %}
+
+{% block dashboard_content %}
+<div class="container-fluid py-4">
+  <!-- 🔹 Page Header -->
+  <div class="d-flex justify-content-between align-items-center flex-wrap mb-4">
+    <h4 class="fw-bold mb-2">📅 Attendance Management</h4>
+    <div>
+      <form method="get" action="{{ url_for('admin.attendance') }}" class="d-flex flex-wrap gap-2">
+        <select name="shift" class="form-select form-select-sm">
+          <option value="">All Shifts</option>
+          {% for s in shifts %}
+          <option value="{{ s }}" {% if s == shift_filter %}selected{% endif %}>{{ s|capitalize }}</option>
+          {% endfor %}
+        </select>
+        <input type="month" name="month" class="form-control form-control-sm" value="{{ month_filter }}">
+        <button type="submit" class="btn btn-primary btn-sm">Filter</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- 🔹 No Results -->
+  {% if not attendance_data %}
+  <div class="alert alert-info text-center">No attendance records found for the selected filters.</div>
+  {% else %}
+
+  <!-- 🔹 Attendance Table -->
+  <div class="accordion" id="companyAccordion">
+    {% for company_id, data in attendance_data.items() %}
+    <div class="accordion-item mb-3 shadow-sm">
+      <h2 class="accordion-header" id="headingCompany{{ company_id }}">
+        <button class="accordion-button collapsed fw-bold" type="button" data-bs-toggle="collapse"
+          data-bs-target="#collapseCompany{{ company_id }}" aria-expanded="false"
+          aria-controls="collapseCompany{{ company_id }}">
+          🏢 {{ data.company.name }}
+        </button>
+      </h2>
+
+      <div id="collapseCompany{{ company_id }}" class="accordion-collapse collapse"
+        aria-labelledby="headingCompany{{ company_id }}" data-bs-parent="#companyAccordion">
+        <div class="accordion-body bg-light">
+          {% for month_key, month in data.months.items() %}
+          <div class="accordion mb-3" id="monthAccordion{{ company_id }}">
+            <div class="accordion-item border-0">
+              <h2 class="accordion-header" id="headingMonth{{ company_id }}{{ loop.index }}">
+                <button class="accordion-button collapsed bg-white" type="button" data-bs-toggle="collapse"
+                  data-bs-target="#collapseMonth{{ company_id }}{{ loop.index }}" aria-expanded="false"
+                  aria-controls="collapseMonth{{ company_id }}{{ loop.index }}">
+                  📆 {{ month.label }}
+                  <span class="ms-auto text-muted small">
+                    Present: {{ month.summary.presents }} | Late: {{ month.summary.lates }} |
+                    Absent: {{ month.summary.absents }} | Off: {{ month.summary.offs }}
+                  </span>
+                </button>
+                    <a href="{{ url_for('admin.download_attendance_report', company_id=data.company.id, month=month_key) }}"
+                      class="btn btn-sm btn-success"
+                      style="float:right;">
+                      <i class="fa fa-download"></i> Download Excel
+                    </a>
+              </h2>
+
+              <div id="collapseMonth{{ company_id }}{{ loop.index }}" class="accordion-collapse collapse"
+                aria-labelledby="headingMonth{{ company_id }}{{ loop.index }}"
+                data-bs-parent="#monthAccordion{{ company_id }}">
+                <div class="accordion-body">
+
+                  {% for day in month.dates %}
+                  <div class="accordion mb-2" id="dayAccordion{{ company_id }}{{ loop.index }}">
+                    <div class="accordion-item border-0">
+                      <h2 class="accordion-header" id="headingDay{{ company_id }}{{ loop.index }}{{ loop.index0 }}">
+                        <button class="accordion-button collapsed bg-light" type="button" data-bs-toggle="collapse"
+                          data-bs-target="#collapseDay{{ company_id }}{{ loop.index }}{{ loop.index0 }}"
+                          aria-expanded="false"
+                          aria-controls="collapseDay{{ company_id }}{{ loop.index }}{{ loop.index0 }}">
+                          🗓️ {{ day.date.strftime("%b %d, %Y") }}
+                          <span class="ms-auto text-muted small">
+                            Present: {{ day.presents }} | Late: {{ day.lates }} | Absent: {{ day.absents }} | Off:
+                            {{ day.offs }}
+                          </span>
+                        </button>
+                      </h2>
+
+                      <div id="collapseDay{{ company_id }}{{ loop.index }}{{ loop.index0 }}"
+                        class="accordion-collapse collapse"
+                        aria-labelledby="headingDay{{ company_id }}{{ loop.index }}{{ loop.index0 }}"
+                        data-bs-parent="#dayAccordion{{ company_id }}{{ loop.index }}">
+                        <div class="accordion-body p-2">
+
+                          <div class="table-responsive">
+                            <table class="table table-sm align-middle mb-0">
+                              <thead class="table-light">
+                                <tr>
+                                  <th>User</th>
+                                  <th>Shift</th>
+                                  <th>Status</th>   
+                                  <th>Marking Time</th>
+                                  <th>Bonus</th>
+                                  <th>Penalty</th>
+                                  <th>Marked By</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {% for r in day.records %}
+                                <tr>
+                                  <td>{{ r.user.user_full_name() }}</td>
+                                  <td>{{ r.shift|capitalize }}</td>
+                                  <td>
+                                    {% if r.status == 'Present' %}
+                                    <span class="badge bg-success">{{ r.status }}</span>
+                                    {% elif r.status == 'Late' %}
+                                    <span class="badge bg-warning text-dark">{{ r.status }}</span>
+                                    {% elif r.status == 'Absent' %}
+                                    <span class="badge bg-danger">{{ r.status }}</span>
+                                    {% elif r.status == 'Off' %}
+                                    <span class="badge bg-secondary">{{ r.status }}</span>
+                                    {% else %}
+                                    {{ r.status }}
+                                    {% endif %}
+                                  </td>
+                                  <td>{{ r.time }}</td>
+                                  <td>{{ "%.2f"|format(r.bonus or 0) }}</td>
+                                  <td>{{ "%.2f"|format(r.penalty or 0) }}</td>
+                                  <td>{{ r.marked_by }}</td>
+                                </tr>
+                                {% endfor %}
+                              </tbody>
+                            </table>
+                          </div>
+
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  {% endfor %}
+                </div>
+              </div>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+</div>
+
+<style>
+  /* 🔹 Responsive tweaks */
+  @media (max-width: 768px) {
+    .accordion-button {
+      font-size: 0.9rem;
+      padding: 0.75rem;
+    }
+
+    .table {
+      font-size: 0.85rem;
+    }
+  }
+
+  /* 🔹 Slight shadow and rounded borders */
+  .accordion-item {
+    border-radius: 0.5rem;
+    overflow: hidden;
+  }
+
+  .accordion-button:not(.collapsed) {
+    background-color: #e9f2ff;
+  }
+</style>
+{% endblock %}

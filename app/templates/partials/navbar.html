@@ -1,0 +1,129 @@
+<style>
+/* ✅ Unified, automatic responsive navbar */
+.navbar {
+  font-family: 'Times New Roman', Times, serif;
+  transition: all 0.3s ease;
+  z-index: 1050;
+}
+
+/* Brand */
+.navbar .navbar-brand {
+  font-size: 1.1rem;
+  white-space: nowrap;
+}
+
+/* Text & Links */
+.navbar .text-light,
+.navbar .nav-link {
+  font-size: 0.95rem;
+  white-space: nowrap;
+}
+
+.navbar .nav-link i {
+  margin-right: 4px;
+}
+
+/* ✅ Padding for fixed-top navbar */
+body {
+  padding-top: 8px; /* ensures content doesn’t hide behind navbar */
+}
+
+/* ✅ Smooth scaling for tablets and medium devices */
+@media (max-width: 992px) {
+  .navbar .navbar-brand {
+    font-size: 1rem;
+  }
+  .navbar .text-light,
+  .navbar .nav-link {
+    font-size: 0.85rem;
+  }
+  .navbar .btn,
+  .navbar .nav-link {
+    padding: 4px 8px !important;
+  }
+  body {
+    padding-top: 64px;
+  }
+}
+
+/* ✅ Very small screen optimization (phones) */
+@media (max-width: 576px) {
+  .navbar {
+    padding: 6px 10px;
+  }
+  .navbar .navbar-brand {
+    font-size: 0.95rem;
+  }
+  .navbar .text-light,
+  .navbar .nav-link {
+    font-size: 0.8rem;
+  }
+  .navbar .container-fluid {
+    flex-wrap: wrap;
+    text-align: center;
+  }
+  .navbar .d-flex {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  body {
+    padding-top: 68px;
+  }
+}
+
+/* ✅ Sidebar states */
+.expanded-mobile {
+  transform: translateX(0);
+  z-index: 2000;
+}
+
+/* ✅ Prevent scroll when sidebar is open */
+body.no-scroll {
+  overflow: hidden;
+}
+
+/* ✅ Keep navbar above all */
+.navbar {
+  z-index: 3000 !important;
+}
+</style>
+
+<nav class="navbar navbar-dark bg-dark fixed-top shadow-sm py-2">
+  <div class="container-fluid d-flex justify-content-between align-items-center">
+    
+    <!-- Left side -->
+    <div class="d-flex align-items-center">
+      <!-- Mobile Sidebar Toggle -->
+      <button class="btn btn-outline-light d-lg-none me-2" id="sidebarToggleMobile" type="button">
+        <i class="bi bi-list"></i>
+      </button>
+
+      <!-- Brand -->
+      <a class="navbar-brand fw-semibold" href="/">🛜 Office Connect</a>
+    </div>
+
+    <!-- Right side -->
+    <div class="d-flex align-items-center flex-wrap text-end">
+      <span class="text-light me-3 fw-semibold">{{ current_user.role|capitalize }}</span>
+      <a class="nav-link text-danger fw-semibold d-flex align-items-center" href="{{ url_for('auth.logout') }}">
+        <i class="bi bi-box-arrow-right"></i> Logout
+      </a>
+    </div>
+  </div>
+</nav>
+
+<script>
+/* ✅ Sidebar toggle functionality */
+document.addEventListener("DOMContentLoaded", () => {
+  const sidebar = document.getElementById("sharedSidebar");
+  const toggleBtn = document.getElementById("sidebarToggleMobile");
+  const body = document.body;
+
+  if (toggleBtn && sidebar) {
+    toggleBtn.addEventListener("click", () => {
+      sidebar.classList.toggle("expanded-mobile");
+      body.classList.toggle("no-scroll"); // Prevent background scrolling
+    });
+  }
+});
+</script>

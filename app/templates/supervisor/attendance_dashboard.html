@@ -1,0 +1,703 @@
+{# app/templates/supervisor/attendance_dashboard.html #}
+{% extends "dashboard_base.html" %}
+{% block title %}Attendance Dashboard{% endblock %}
+
+{% block dashboard_content %}
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+
+<style>
+/* Unified theme variables (matches your dashboard_base) */
+:root {
+  --accent: #2563eb;
+  --muted: #6b7280;
+  --card-bg: #fff;
+  --panel-bg: #f8fafc;
+  --shadow-1: 0 6px 18px rgba(15, 23, 42, 0.06);
+  --bubble: 0 10px 30px rgba(37,99,235,0.06);
+}
+
+/* Make this page use Times New Roman as requested (only for content area) */
+.dashboard-content { font-family: "Times New Roman", Times, serif; }
+
+/* Header controls row */
+.controls-row {
+  display:flex;
+  gap:10px;
+  align-items:center;
+  flex-wrap:wrap;
+  margin-bottom:18px;
+}
+.controls-row .form-control,
+.controls-row .form-select {
+  min-width: 160px;
+}
+
+/* Date card styling */
+.date-card {
+  background: var(--card-bg);
+  border-radius: 12px;
+  box-shadow: var(--shadow-1);
+  padding: 14px;
+  margin-bottom: 12px;
+  transition: transform 220ms ease, box-shadow 220ms ease;
+  border: 1px solid rgba(15,23,42,0.03);
+}
+.date-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--bubble);
+}
+
+/* summary row inside card */
+.date-summary {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  flex-wrap:wrap;
+}
+.badge-stat {
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  padding:8px 12px;
+  border-radius:999px;
+  background: #f1f5f9;
+  color: var(--muted);
+  font-weight:600;
+  font-size:0.92rem;
+}
+
+/* marked-by and meta */
+.meta {
+  color: var(--muted);
+  font-size:0.92rem;
+}
+
+/* collapse content table */
+.details-table {
+  margin-top:12px;
+  width:100%;
+  border-radius:8px;
+  overflow:hidden;
+  border: 1px solid rgba(15,23,42,0.04);
+}
+.details-table table { margin-bottom:0; }
+.details-table tbody tr td { padding:10px 12px; vertical-align:middle; }
+
+/* status pills */
+.status-pill {
+  padding:6px 10px;
+  border-radius:999px;
+  font-weight:600;
+  font-size:0.85rem;
+}
+.status-present { background: rgba(34,197,94,0.12); color:#166534; }
+.status-late { background: rgba(245,158,11,0.12); color:#92400e; }
+.status-absent { background: rgba(239,68,68,0.08); color:#9b1c1c; }
+.status-off { background: rgba(99,102,241,0.08); color:#3730a3; }
+
+/* small helpers */
+.count-num { font-weight:700; color:var(--accent); }
+.small-muted { color:var(--muted); font-size:0.88rem; }
+
+/* responsive */
+@media (max-width: 720px) {
+  .controls-row { flex-direction:column; align-items:stretch; }
+  .controls-row .form-control, .controls-row .form-select { width:100%; }
+  .badge-stat { width:48%; justify-content:center; }
+}
+/* 🔹 Fade + Slide Animation for Collapsible Summary */
+.fade-slide {
+  transition: all 0.45s ease-in-out;
+  transform-origin: top;
+  opacity: 0;
+  transform: translateY(-10px);
+}
+.fade-slide.show {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* 🔹 Scrollable Summary Table */
+.scrollable-summary {
+  max-height: 420px;
+  overflow-y: auto;
+  border-radius: 10px;
+}
+.scrollable-summary::-webkit-scrollbar {
+  width: 8px;
+}
+.scrollable-summary::-webkit-scrollbar-thumb {
+  background: var(--muted);
+  border-radius: 5px;
+}
+
+
+</style>
+
+<div class="container-fluid py-2">
+
+  <!-- 🔹 Header -->
+  <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 page-header">
+      <h4 class="mb-2 mb-md-0"><i class="bi bi-calendar-check"></i> Attendance Dashboard</h4>
+  </div>
+
+  <div class="card shadow-sm">
+    
+    <!-- Top controls (search, month, shift) -->
+    <form id="filterForm" class="d-flex flex-wrap align-items-center gap-2 mb-3" 
+          method="get" 
+          action="{{ url_for('supervisor.attendance_dashboard') }}">
+
+      <!-- 🔹 Month Selector -->
+      <input type="month" 
+            name="month" 
+            id="monthInput" 
+            class="form-control" 
+            max="{{ current_date.strftime('%Y-%m') }}" 
+            value="{{ month }}" 
+            style="max-width: 180px;">
+
+      <!-- 🔹 Shift Selector -->
+      <select name="shift" 
+              id="shiftSelect" 
+              class="form-select" 
+              style="max-width: 160px;">
+        {% for s in shifts %}
+          <option value="{{ s }}" {% if s==shift %}selected{% endif %}>{{ s.capitalize() }} Shift</option>
+        {% endfor %}
+      </select>
+
+      <!-- 🔹 Buttons (aligned right on larger screens) -->
+      <div class="d-flex flex-wrap align-items-center gap-2 ms-auto">
+        <a href="{{ url_for('supervisor.mark_attendance') }}" class="btn btn-success">Mark Attendance</a>
+          <button type="button" class="btn btn-outline-secondary" data-bs-toggle="collapse" data-bs-target="#clearancesCollapse" aria-expanded="false">
+            View Clearances
+          </button>
+          <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addClearanceModal">
+            <i class="bi bi-cash-coin me-1"></i>Add Clearance
+          </button>
+          <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#addPenaltyModal">
+            <i class="bi bi-exclamation-triangle me-1"></i>Add Penalty
+          </button>
+      </div>
+    </form>
+
+
+<!-- 🔷 Monthly Shift Summary -->
+<div class="date-card mb-3">
+  <div class="date-summary d-flex flex-wrap justify-content-between align-items-center gap-2">
+    <div>
+      <div class="h6 mb-1">
+        Monthly Summary – {{ month }}
+        <small class="text-muted">({{ shift|capitalize }} Shift)</small>
+      </div>
+      <div class="meta text-muted">All users summary for this month and shift.</div>
+    </div>
+
+    <!-- Toggle Button -->
+    <button class="btn btn-sm btn-outline-primary d-flex align-items-center"
+            data-bs-toggle="collapse" data-bs-target="#monthlySummaryCollapse"
+            aria-expanded="false" aria-controls="monthlySummaryCollapse">
+      <span class="me-1">View Summary</span>
+      <i class="bi bi-chevron-down"></i>
+    </button>
+  </div>
+
+  <!-- Collapsible Summary Section -->
+  <div class="collapse mt-3 fade-slide" id="monthlySummaryCollapse">
+    <div class="details-table table-responsive shadow-sm rounded-3 scrollable-summary">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="table-dark text-white sticky-top">
+          <tr>
+            <th>#</th>
+            <th>Full Name</th>
+            <th>Username</th>
+            <th>Presents</th>
+            <th>Lates</th>
+            <th>Absents</th>
+            <th>Offs</th>
+            <th>Details</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for s in monthly_summary %}
+            <tr data-bs-toggle="collapse" data-bs-target="#collapseUser{{ s.user.id }}"
+                class="clickable-row" style="cursor:pointer;">
+              <td>{{ loop.index }}</td>
+              <td>{{ s.user.user_full_name() }}</td>
+              <td>{{ s.user.username }}</td>
+              <td><span class="count-num text-success fw-semibold">{{ s.present }}</span></td>
+              <td><span class="count-num text-warning fw-semibold">{{ s.late }}</span></td>
+              <td><span class="count-num text-danger fw-semibold">{{ s.absent }}</span></td>
+              <td><span class="count-num text-secondary fw-semibold">{{ s.off }}</span></td>
+              <td><i class="bi bi-caret-down-fill text-primary"></i></td>
+            </tr>
+
+            <tr class="collapse bg-light" id="collapseUser{{ s.user.id }}">
+              <td colspan="8" class="p-3">
+                {% if s.attendance_records %}
+                  <div class="table-responsive">
+                    <table class="table table-sm table-bordered mb-0">
+                      <thead class="table-secondary">
+                        <tr>
+                          <th>Date</th>
+                          <th>Time</th>
+                          <th>Status</th>
+                          <th>Bonus</th>
+                          <th>Penalty</th>
+                          <th>Marked By</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {% for r in s.attendance_records %}
+                          <tr>
+                            <td>{{ r.date.strftime('%Y-%m-%d') }}</td>
+                            <td>{{ r.time.strftime('%I:%M %p') }}</td>
+                            <td>
+                              {% if r.status == 'Present' %}
+                                <span class="badge bg-success">{{ r.status }}</span>
+                              {% elif r.status == 'Late' %}
+                                <span class="badge bg-warning text-dark">{{ r.status }}</span>
+                              {% elif r.status == 'Absent' %}
+                                <span class="badge bg-danger">{{ r.status }}</span>
+                              {% elif r.status == 'Off' %}
+                                <span class="badge bg-secondary">{{ r.status }}</span>
+                              {% else %}
+                                {{ r.status }}
+                              {% endif %}
+                            </td>
+                            <td>{{ "{:,.0f}".format(r.bonus or 0) }}</td>
+                            <td>
+                              {% if r.penalty_details %}
+                                <span class="badge bg-danger text-white">
+                                  {{ r.penalty_details | length }} Penalties
+                                </span>
+                                <i class="bi bi-info-circle text-primary ms-1"
+                                  data-bs-toggle="tooltip"
+                                  data-bs-html="true"
+                                  title="
+                                    {% for p in r.penalty_details %}
+                                      For: {{ p.reason }} <br>
+                                      (by {{ p.marked_by }})<br>
+                                    {% endfor %}
+                                  ">
+                                </i>
+                              {% else %}
+                                {{ "{:,.0f}".format(r.penalty or 0) }}
+                              {% endif %}
+                            </td>
+
+                            <td>{{ r.marker.user_full_name() if r.marker else "—" }}</td>
+                          </tr>
+                        {% endfor %}
+                      </tbody>
+                    </table>
+                  </div>
+                {% else %}
+                  <div class="text-muted">No attendance records found for this user.</div>
+                {% endif %}
+              </td>
+            </tr>
+          {% else %}
+            <tr>
+              <td colspan="8" class="text-muted text-center py-3">
+                No records found for this month.
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+
+    <!-- Daily attendance list -->
+    <div id="datesList">
+      {% if attendance_by_date %}
+        {% for day in attendance_by_date %}
+          {% set id = 'd_' + day.display_date.replace('-', '_') %}
+          <div class="date-card" data-date="{{ day.display_date }}">
+            <div class="date-summary">
+              <div>
+                <div class="h6 mb-1">{{ day.display_date }} <small class="small-muted">({{ day.shift|capitalize }} shift)</small></div>
+                <div class="meta">Marked by: <strong>{{ day.marked_by or '—' }}</strong></div>
+              </div>
+
+              <div class="d-flex align-items-center gap-2 flex-wrap">
+                <div class="badge-stat"><i class="bi bi-check2-circle"></i> Present <span class="ms-2 count-num">{{ day.counts.presents }}</span></div>
+                <div class="badge-stat"><i class="bi bi-alarm"></i> Late <span class="ms-2 count-num">{{ day.counts.lates }}</span></div>
+                <div class="badge-stat"><i class="bi bi-umbrella"></i> Off <span class="ms-2 count-num">{{ day.counts.offs }}</span></div>
+                <div class="badge-stat"><i class="bi bi-x-circle"></i> Absent <span class="ms-2 count-num">{{ day.counts.absents }}</span></div>
+
+                <button class="btn btn-sm btn-outline-primary ms-2" data-bs-toggle="collapse" data-bs-target="#{{ id }}" aria-expanded="false">
+                  View details <i class="bi bi-chevron-down ms-1"></i>
+                </button>
+              </div>
+            </div>
+
+            <!-- collapse section for details -->
+            <div class="collapse mt-3" id="{{ id }}">
+              <div class="details-table">
+                <table class="table table-hover mb-0">
+                  <thead class="table-light">
+                    <tr>
+                      <th>#</th>
+                      <th>Full Name</th>
+                      <th>Username</th>
+                      <th>Marked At</th>
+                      <th>Status</th>
+  <!--                <th>Late</th>
+                      <th>Penalty</th>
+                      <th>Bonus</th>-->
+                      <th>Marked By</th>
+                    </tr>
+                  </thead>
+                    <tbody class="details-body">
+                      {% for r in day.records %}
+                        <tr class="detail-row">
+                          <td>{{ loop.index }}</td>
+                          <td class="fullname">{{ r.user.user_full_name() }}</td>
+                          <td class="username">{{ r.user.username }}</td>
+                          <td>{{ r.time.strftime('%H:%M:%S') }}</td>
+                          <td>
+                            {% if r.status == 'Present' %}
+                              <span class="status-pill status-present">Present</span>
+                            {% elif r.status == 'Late' %}
+                              <span class="status-pill status-late">Late</span>
+                            {% elif r.status == 'Absent' %}
+                              <span class="status-pill status-absent">Absent</span>
+                            {% elif r.status == 'Off' %}
+                              <span class="status-pill status-off">Off</span>
+                            {% else %}
+                              <span class="small-muted">{{ r.status }}</span>
+                            {% endif %}
+                          </td>
+    <!--                 <td>{% if r.is_late %}Yes{% else %}No{% endif %}</td>
+                          <td>PKR: {{ "{:,.2f}".format(r.penalty or 0) }}</td>
+                          <td>PKR: {{ "{:,.2f}".format(r.bonus or 0) }}</td>        -->
+                          <td>{{ (r.marker.user_full_name() if r.marker else '—') }}</td>
+                        </tr>
+                      {% endfor %}
+                    </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        {% endfor %}
+      {% else %}
+        <div class="alert alert-info">No attendance records found for {{ month }} and {{ shift }} shift.</div>
+      {% endif %}
+    </div>
+
+    <!-- Clearances collapsible area -->
+    <div class="collapse mt-3" id="clearancesCollapse">
+      <div class="card p-3 shadow-sm">
+        <h6 class="mb-3">Recent Clearances</h6>
+        <div class="table-responsive">
+          <table class="table table-sm table-hover mb-0">
+            <thead class="table-light">
+              <tr><th>#</th><th>Username</th><th>Amount</th><th>Reason</th><th>Date</th></tr>
+            </thead>
+            <tbody>
+              {% for c in clearances %}
+                <tr>
+                  <td>{{ loop.index }}</td>
+                  <td>{{ c.user.username }}</td>
+                  <td>PKR: {{ "{:,.2f}".format(c.amount) }}</td>
+                  <td>{{ c.reason }}</td>
+                  <td>{{ c.date_added.strftime('%Y-%m-%d') }}</td>
+                </tr>
+              {% else %}
+                <tr><td colspan="5" class="text-muted">No clearance records yet.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+
+  
+
+  </div>
+
+  <!-- 🔹 Add Penalty Modal -->
+  <div class="modal fade" id="addPenaltyModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5>Add Penalty</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+
+        <div class="modal-body">
+          <input type="text" id="penaltySearch" class="form-control mb-3" placeholder="Search agent by name or username">
+          <table id="penaltyUsersTable" class="table table-bordered">
+            <thead><tr><th>Name</th><th>Username</th><th>Salary</th><th>Select</th></tr></thead>
+            <tbody><tr><td colspan="4" class="text-center text-muted">Start typing to search...</td></tr></tbody>
+          </table>
+
+          <form id="penaltyForm">
+            <input type="hidden" id="penaltyUserId">
+            <div id="penaltyFormFields" style="display:none;">
+              <div class="mb-2">
+                <label>Agent</label>
+                <input type="text" id="penaltyUserName" class="form-control" readonly>
+              </div>
+              <div class="mb-2">
+                <label>Amount</label>
+                <input type="number" id="penaltyAmount" class="form-control" required>
+              </div>
+              <div class="mb-2">
+                <label>Reason</label>
+                <textarea id="penaltyReason" class="form-control" required></textarea>
+              </div>
+            </div>
+            <button type="submit" id="penaltySubmitBtn" class="btn btn-danger mt-2" style="display:none;">Submit</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  
+  <!-- 🔹 Add Clearance Modal -->
+  <div class="modal fade" id="addClearanceModal" tabindex="-1" aria-labelledby="addClearanceModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+      <div class="modal-content shadow-lg">
+        <!-- 🔸 Header -->
+        <div class="modal-header bg-success text-white">
+          <h5 class="modal-title" id="addClearanceModalLabel">
+            <i class="bi bi-check2-circle"></i> Add Clearance
+          </h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+
+        <!-- 🔸 Body -->
+        <div class="modal-body">
+          <!-- Search -->
+          <div class="mb-3">
+            <label class="form-label fw-bold">Search Agent</label>
+            <input type="text" id="clearanceSearch" class="form-control" placeholder="Search agent by name or username">
+          </div>
+
+          <!-- Table -->
+          <div class="table-responsive mb-3">
+            <table id="clearanceUsersTable" class="table table-bordered align-middle">
+              <thead class="table-light">
+                <tr>
+                  <th>Name</th>
+                  <th>Username</th>
+                  <th>Salary</th>
+                  <th>Select</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td colspan="4" class="text-center text-muted">Start typing to search...</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Clearance Form -->
+          <form id="clearanceForm">
+            <input type="hidden" id="clearanceUserId">
+
+            <div id="clearanceFormFields" style="display:none;">
+              <div class="mb-3">
+                <label class="form-label fw-bold">Agent Name</label>
+                <input type="text" id="clearanceUserName" class="form-control" readonly>
+              </div>
+
+              <div class="row">
+                <div class="col-md-6 mb-3">
+                  <label class="form-label fw-bold">Amount (PKR)</label>
+                  <input type="number" id="clearanceAmount" class="form-control" placeholder="Enter amount" required>
+                </div>
+
+                <div class="col-md-6 mb-3">
+                  <label class="form-label fw-bold">Reason</label>
+                  <input type="text" id="clearanceReason" class="form-control" placeholder="Enter reason" required>
+                </div>
+              </div>
+            </div>
+
+            <div class="text-end">
+              <button type="submit" id="clearanceSubmitBtn" class="btn btn-success mt-2" style="display:none;">
+                <i class="bi bi-check2-square"></i> Submit Clearance
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+</div>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+
+  // 🔹 Auto-submit filter form on change
+  const monthInput = document.getElementById('monthInput');
+  const shiftSelect = document.getElementById('shiftSelect');
+  const filterForm = document.getElementById('filterForm');
+  const summaryBtn = document.getElementById("summaryToggleBtn");
+  const summaryIcon = document.getElementById("summaryToggleIcon");
+  const summaryCollapse = document.getElementById("monthlySummaryCollapse");
+  var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    tooltipTriggerList.map(function (tooltipTriggerEl) {
+      return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+
+  if (summaryCollapse) {
+    summaryCollapse.addEventListener("show.bs.collapse", () => {
+      summaryIcon.classList.remove("bi-chevron-down");
+      summaryIcon.classList.add("bi-chevron-up");
+    });
+
+    summaryCollapse.addEventListener("hide.bs.collapse", () => {
+      summaryIcon.classList.remove("bi-chevron-up");
+      summaryIcon.classList.add("bi-chevron-down");
+    });
+  }
+  if (monthInput && filterForm) monthInput.addEventListener('change', () => filterForm.submit());
+  if (shiftSelect && filterForm) shiftSelect.addEventListener('change', () => filterForm.submit());
+
+  // =======================================================
+  // 🔹 Universal Modal Handler (Penalty + Clearance)
+  // =======================================================
+  function attachModalHandlers(type) {
+    const prefix = type.toLowerCase();
+    const modalEl = document.getElementById(`add${type}Modal`);
+    if (!modalEl) return;
+
+    // Hide other modals when showing one
+    modalEl.addEventListener('show.bs.modal', () => {
+      document.querySelectorAll('.modal.show').forEach(m => {
+        const instance = bootstrap.Modal.getInstance(m);
+        if (instance) instance.hide();
+      });
+    });
+
+    const searchInput = modalEl.querySelector(`#${prefix}Search`);
+    const tableBody = modalEl.querySelector(`#${prefix}UsersTable tbody`);
+    if (!searchInput || !tableBody) return;
+
+    // Debounced live search
+    let searchTimeout;
+    searchInput.addEventListener('input', () => {
+      const q = searchInput.value.trim();
+      clearTimeout(searchTimeout);
+
+      if (q.length < 2) {
+        tableBody.innerHTML = `<tr><td colspan="4" class="text-center text-muted">Type at least 2 letters...</td></tr>`;
+        return;
+      }
+
+      searchTimeout = setTimeout(async () => {
+        tableBody.innerHTML = `<tr><td colspan="4" class="text-center text-muted">Searching...</td></tr>`;
+
+        try {
+          const res = await fetch(`/supervisor/search_agents?q=${encodeURIComponent(q)}`);
+          const data = await res.json();
+
+          if (data.length === 0) {
+            tableBody.innerHTML = `<tr><td colspan="4" class="text-center text-danger">No matching agents found.</td></tr>`;
+            return;
+          }
+
+          tableBody.innerHTML = data.map(agent => `
+            <tr>
+              <td>${agent.name}</td>
+              <td>${agent.username}</td>
+              <td>${agent.salary ?? '—'}</td>
+              <td>
+                <button type="button" 
+                        class="btn btn-sm ${prefix === 'penalty' ? 'btn-danger' : 'btn-success'} select-${prefix}-user" 
+                        data-id="${agent.id}" 
+                        data-name="${agent.name}">
+                  Select
+                </button>
+              </td>
+            </tr>
+          `).join('');
+
+          // Attach selection handlers
+          tableBody.querySelectorAll(`.select-${prefix}-user`).forEach(btn => {
+            btn.addEventListener('click', () => {
+              document.getElementById(`${prefix}UserId`).value = btn.dataset.id;
+              document.getElementById(`${prefix}UserName`).value = btn.dataset.name;
+              document.getElementById(`${prefix}FormFields`).style.display = 'block';
+              document.getElementById(`${prefix}SubmitBtn`).style.display = 'inline-block';
+            });
+          });
+
+        } catch (err) {
+          console.error("Search error:", err);
+          tableBody.innerHTML = `<tr><td colspan="4" class="text-center text-danger">Error fetching data.</td></tr>`;
+        }
+
+      }, 300);
+    });
+
+    // =======================================================
+    // 🔹 Handle Form Submission (AJAX)
+    // =======================================================
+    const submitBtn = document.getElementById(`${prefix}SubmitBtn`);
+    const formEl = document.getElementById(`${prefix}Form`);
+    if (submitBtn && formEl) {
+      formEl.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        submitBtn.disabled = true;
+        submitBtn.textContent = "Processing...";
+
+        const payload = {
+          agent_id: document.getElementById(`${prefix}UserId`).value,
+          amount: document.getElementById(`${prefix}Amount`).value,
+          reason: document.getElementById(`${prefix}Reason`).value
+        };
+
+        try {
+          const res = await fetch(`/supervisor/add_${prefix}`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+          });
+
+          const data = await res.json();
+          if (res.ok) {
+            alert(`✅ ${data.message}`);
+            bootstrap.Modal.getInstance(modalEl).hide();
+            formEl.reset();
+            document.getElementById(`${prefix}FormFields`).style.display = 'none';
+            document.getElementById(`${prefix}SubmitBtn`).style.display = 'none';
+          } else {
+            alert(`⚠️ ${data.error || "Something went wrong."}`);
+          }
+        } catch (err) {
+          console.error("Submit error:", err);
+          alert("❌ Network or server error.");
+        } finally {
+          submitBtn.disabled = false;
+          submitBtn.textContent = "Submit";
+        }
+      });
+    }
+  }
+
+  // Attach for both modals
+  attachModalHandlers('Penalty');
+  attachModalHandlers('Clearance');
+
+  
+});
+</script>
+
+
+
+{% endblock %}

@@ -1,0 +1,95 @@
+{% extends "dashboard_base.html" %}
+{% block title %}Reset Password{% endblock %}
+{% block dashboard_content %}
+
+<div class="container py-5" style="max-width: 480px;">
+    <div class="card shadow-sm border-0 rounded-4">
+        <div class="card-body">
+            <h4 class="text-center mb-4">🔒 Reset Password</h4>
+
+            <form method="POST" novalidate>
+                <!-- Current Password -->
+                <div class="mb-3 position-relative">
+                    <label>Current Password</label>
+                    <input type="password" name="current_password" class="form-control" id="currentPassword" required>
+                </div>
+
+                <hr class="my-4">
+
+                <!-- New Password -->
+                <div class="mb-3 position-relative">
+                    <label>New Password</label>
+                    <input type="password" name="new_password" class="form-control" id="newPassword" required>
+                    <small id="strengthText" class="text-muted mt-1 d-block"></small>
+                </div>
+
+                <!-- Confirm Password -->
+                <div class="mb-3 position-relative">
+                    <label>Confirm New Password</label>
+                    <input type="password" name="confirm_new_password" class="form-control" id="confirmPassword" required>
+                    <small id="matchText" class="text-muted mt-1 d-block"></small>
+                </div>
+
+                <!-- Show Password -->
+                <div class="form-check mb-3">
+                    <input type="checkbox" class="form-check-input" id="showPassword">
+                    <label class="form-check-label" for="showPassword">Show Password</label>
+                </div>
+
+                <button class="btn btn-primary w-100 mt-2">Update Password</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    // 🔹 Toggle show password
+    document.getElementById('showPassword').addEventListener('change', function() {
+        const newPass = document.getElementById('newPassword');
+        const confirmPass = document.getElementById('confirmPassword');
+        const currentPass = document.getElementById('currentPassword');
+        const type = this.checked ? 'text' : 'password';
+        [newPass, confirmPass, currentPass].forEach(el => el.type = type);
+    });
+
+    // 🔹 Password strength indicator
+    const newPass = document.getElementById('newPassword');
+    const strengthText = document.getElementById('strengthText');
+    newPass.addEventListener('input', () => {
+        const val = newPass.value;
+        let strength = 0;
+
+        if (val.length >= 8) strength++;
+        if (/[A-Z]/.test(val)) strength++;
+        if (/[0-9]/.test(val)) strength++;
+        if (/[@$!%*?&#]/.test(val)) strength++;
+
+        let msg = "";
+        let color = "";
+        switch (strength) {
+            case 0:
+            case 1: msg = "Weak"; color = "red"; break;
+            case 2: msg = "Moderate"; color = "orange"; break;
+            case 3:
+            case 4: msg = "Strong"; color = "green"; break;
+        }
+
+        strengthText.textContent = "Password strength: " + msg;
+        strengthText.style.color = color;
+    });
+
+    // 🔹 Confirm password match
+    const confirmPass = document.getElementById('confirmPassword');
+    const matchText = document.getElementById('matchText');
+    confirmPass.addEventListener('input', () => {
+        if (confirmPass.value !== newPass.value) {
+            matchText.textContent = "Passwords do not match";
+            matchText.style.color = "red";
+        } else {
+            matchText.textContent = "Passwords match";
+            matchText.style.color = "green";
+        }
+    });
+</script>
+
+{% endblock %}

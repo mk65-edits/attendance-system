@@ -1,0 +1,63 @@
+{% extends "dashboard_base.html" %}
+{% block title %}Increment History - {{ user.first_name }}{% endblock %}
+
+{% block dashboard_content %}
+<div class="container py-4">
+    <div class="card shadow-sm">
+        <div class="card-header bg-white d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">
+                <i class="bi bi-clock-history"></i> Increment History for {{ user.first_name }} {{ user.last_name }}
+            </h5>
+            <a href="{{ url_for('admin.salary_management') }}" class="btn btn-outline-secondary btn-sm">← Back</a>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>#</th>
+                        <th>Previous Salary</th>
+                        <th>Increment</th>
+                        <th>New Salary</th>
+                        <th>Reason</th>
+                        <th>Date Added</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for inc in increments %}
+                    <tr>
+                        <td>{{ loop.index }}</td>
+                        <td>Rs. {{ "%.0f"|format(inc.previous_salary or 0) }}</td>
+                        <td>Rs. {{ "%.0f"|format(inc.increment_amount or 0) }}</td>
+                        <td>Rs. {{ "%.0f"|format(inc.new_salary or 0) }}</td>
+                        <td>{{ inc.reason }}</td>
+                        <td>{{ inc.date_added.strftime('%Y-%m-%d %H:%M') }}</td>
+
+                        <td>
+                            {% if loop.first %}
+                                <!-- ✅ Only show Revoke button for the latest increment -->
+                                <form method="POST" 
+                                      action="{{ url_for('admin.revoke_increment', increment_id=inc.id) }}" 
+                                      style="display:inline;"
+                                      onsubmit="return confirm('Are you sure you want to revoke this increment? This action cannot be undone.');">
+                                    <button type="submit" class="btn btn-sm btn-outline-danger">
+                                        <i class="bi bi-x-circle"></i> Revoke
+                                    </button>
+                                </form>
+                            {% else %}
+                                <span class="text-muted">—</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="7" class="text-center py-3">No increments found.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,137 @@
+{% extends "dashboard_base.html" %}
+{% block title %}Admin Dashboard - Office Connect{% endblock %}
+
+{% block dashboard_content %}
+<style>
+/* ================== THEME COLORS ================== */
+:root {
+  --primary: #2563eb;
+  --primary-dark: #1e3a8a;
+  --surface: #f8fafc;
+  --card-bg: #ffffff;
+  --text-dark: #1e293b;
+  --muted: #64748b;
+  --shadow-sm: 0 4px 10px rgba(0, 0, 0, 0.06);
+  --shadow-md: 0 6px 20px rgba(0, 0, 0, 0.1);
+}
+
+/* ================== LAYOUT WRAPPER ================== */
+.admin-dashboard-wrapper {
+  display: flex;
+  gap: 24px;
+  min-height: 70vh;
+  padding: 20px;
+  animation: fadeIn 0.4s ease-in;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+
+
+
+/* ================== MAIN CONTENT ================== */
+.admin-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+.admin-main h2 {
+  font-size: 1.5rem;
+  color: var(--primary-dark);
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.1);
+}
+
+/* ================== SUMMARY CARDS ================== */
+.summary-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 20px;
+}
+
+.summary-card {
+  background: var(--card-bg);
+  border-radius: 14px;
+  padding: 20px;
+  box-shadow: var(--shadow-sm);
+  text-align: center;
+  transition: transform 0.25s ease, box-shadow 0.25s ease, background 0.25s;
+  border: 1px solid rgba(203, 213, 225, 0.4);
+}
+
+.summary-card:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-md);
+  background: linear-gradient(180deg, #ffffff, #f9fafb);
+}
+
+.summary-card h6 {
+  color: var(--muted);
+  margin-bottom: 8px;
+  font-weight: 500;
+  font-size: 0.92rem;
+}
+
+.summary-card .value {
+  font-size: 1.7rem;
+  font-weight: 700;
+  color: var(--primary);
+  letter-spacing: 0.5px;
+}
+
+</style>
+
+<div class="admin-dashboard-wrapper">
+
+    <!-- Main Content -->
+    <main class="admin-main">
+
+        <div class="mb-4 text-center border-bottom pb-3">
+        <h5 class="fw-bold mb-2">Welcome, {{ current_user.user_full_name() }} 👋</h5>
+        <p class="text-muted mb-0">| Date: {{ current_date.strftime('%B %d, %Y') }}</p>
+        </div>
+
+        <h5>Dashboard Overview</h5>
+
+        <div class="summary-cards">
+            <div class="summary-card">
+                <h6>Total Agents</h6>
+                <div class="value">{{ stats.total_agents }}</div>
+            </div>
+            <div class="summary-card">
+                <h6>Disabled Users</h6>
+                <div class="value">{{ stats.disabled_users }}</div>
+            </div>
+            <div class="summary-card">
+                <h6>Total Bonuses</h6>
+                <div class="value">${{ stats.total_bonuses }}</div>
+            </div>
+            <div class="summary-card">
+                <h6>Companies Enrolled</h6>
+                <div class="value">{{ stats.company_count }}</div>
+            </div>
+            <div class="summary-card">
+                <h6>Present Users</h6>
+                <div class="value">{{ stats.present_users }}</div>
+            </div>
+            <div class="summary-card">
+                <h6>Late Users</h6>
+                <div class="value">{{ stats.late_users }}</div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<script>
+function toggleSidebar() {
+    const sidebar = document.getElementById('adminSidebar');
+    sidebar.classList.toggle('expanded');
+}
+</script>
+{% endblock %}

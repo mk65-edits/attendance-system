@@ -1,0 +1,148 @@
+{% extends "base.html" %}
+{% block title %}Login - Office Connect{% endblock %}
+
+{% block content %}
+<style>
+    body {
+        background: linear-gradient(135deg, #f3f6fb, #eaf0f8);
+        font-family: 'Poppins', sans-serif;
+    }
+
+    .login-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        padding: 20px;
+    }
+
+    .login-card {
+        background: white;
+        border-radius: 20px;
+        box-shadow: 0 8px 25px rgba(0,0,0,0.08);
+        padding: 40px 30px;
+        width: 100%;
+        max-width: 420px;
+        text-align: center;
+        position: relative;
+    }
+
+    /* --- Logo & single-line lock --- */
+    .login-logo h4 {
+        font-weight: 600;
+        color: #222;
+        font-size: 1.5rem;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        white-space: nowrap; /* Keep on one line */
+        margin: 0;
+    }
+
+    /* emoji rendered as plain blue character with a subtle glow */
+    .emoji-logo::before {
+        content: "🛜";                 /* chosen connectivity icon */
+        display: inline-block;
+        font-size: 3.2rem;           /* larger size */
+        line-height: 1;
+        color: #2563eb;              /* solid blue color, no gradient */
+        vertical-align: middle;
+        /* subtle low-intensity glow animation */
+        text-shadow: 0 0 0 rgba(37,99,235,0);
+        animation: gentleGlow 4s ease-in-out infinite;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+    }
+
+    @keyframes gentleGlow {
+        0%   { text-shadow: 0 0 0 rgba(37,99,235,0.00); transform: translateY(0); }
+        50%  { text-shadow: 0 0 8px rgba(37,99,235,0.12); transform: translateY(-1px); }
+        100% { text-shadow: 0 0 0 rgba(37,99,235,0.00); transform: translateY(0); }
+    }
+
+    .login-logo p {
+        color: #777;
+        font-size: 13px;
+        margin-top: 6px;
+        margin-bottom: 16px;
+    }
+
+    /* --- Form Controls --- */
+    .form-control {
+        border-radius: 30px;
+        padding: 12px 18px;
+        border: 1px solid #e2e8f0;
+        box-shadow: none;
+    }
+
+    .btn-login {
+        width: 100%;
+        background: linear-gradient(90deg, #3b82f6, #2563eb);
+        border: none;
+        border-radius: 30px;
+        color: white;
+        padding: 12px;
+        font-weight: 600;
+        transition: transform 0.12s ease, box-shadow 0.12s ease;
+    }
+
+    .btn-login:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 24px rgba(37,99,235,0.12);
+    }
+
+    .forgot {
+        text-align: right;
+        display: block;
+        margin-top: 8px;
+        color: #2563eb;
+        font-size: 13px;
+        text-decoration: none;
+    }
+
+    .forgot:hover {
+        text-decoration: underline;
+    }
+
+    .system-info {
+        margin-top: 20px;
+        font-size: 12px;
+        color: #777;
+    }
+
+    /* Mobile adjustments */
+    @media (max-width: 420px) {
+        .login-card { padding: 28px 20px; }
+        .emoji-logo::before { font-size: 2.6rem; }
+        .login-logo h4 { font-size: 1.25rem; gap: 8px; }
+    }
+</style>
+
+<div class="login-container">
+    <div class="login-card">
+        <div class="login-logo">
+            <h4><span class="emoji-logo"></span> OFFICE CONNECT</h4>
+            <p>Attendance & Salary</p>
+        </div>
+
+        <form method="POST" action="{{ url_for('auth.login') }}">
+            {{ form.hidden_tag() }}
+            <div class="mb-3">
+                {{ form.username.label(class="form-label visually-hidden") }}
+                {{ form.username(class="form-control", placeholder="Username or Email") }}
+            </div>
+            <div class="mb-2">
+                {{ form.password.label(class="form-label visually-hidden") }}
+                {{ form.password(class="form-control", placeholder="Password") }}
+            </div>
+
+            <button type="submit" class="btn-login mt-3">SECURE LOGIN</button>
+        </form>
+
+        <div class="system-info">
+            <p>All rights reserved by MK TECHNOLOGIES</p>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,203 @@
+{% extends "dashboard_base.html" %}
+{% block title %}Agent Reports{% endblock %}
+{% block dashboard_content %}
+
+<style>
+    .dashboard-cards {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 15px;
+        margin-bottom: 25px;
+    }
+
+    .stat-card {
+        background: white;
+        border-radius: 15px;
+        padding: 20px;
+        box-shadow: 0 3px 8px rgba(0, 0, 0, 0.08);
+        text-align: center;
+        transition: all 0.3s ease;
+    }
+
+    .stat-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 6px 14px rgba(0, 0, 0, 0.1);
+    }
+
+    .stat-icon {
+        font-size: 1.8rem;
+        margin-bottom: 8px;
+    }
+
+    .report-table {
+        background: white;
+        border-radius: 15px;
+        box-shadow: 0 3px 8px rgba(0, 0, 0, 0.05);
+        overflow: hidden;
+    }
+
+    .table thead {
+        background-color: #f8f9fa;
+        font-weight: 600;
+    }
+
+    .expand-row {
+        cursor: pointer;
+        transition: background-color 0.2s ease;
+    }
+
+    .expand-row:hover {
+        background-color: #f1f1f1;
+    }
+
+    .collapse-inner {
+        background: #fcfcfc;
+        padding: 10px 20px;
+        border-top: 1px solid #eee;
+    }
+
+    .salary-box {
+        background: #f8f9fa;
+        border-radius: 10px;
+        padding: 20px;
+        margin-top: 25px;
+        box-shadow: inset 0 0 8px rgba(0,0,0,0.03);
+    }
+
+    .salary-box h6 {
+        font-weight: 700;
+        margin-bottom: 15px;
+    }
+
+    .salary-item {
+        display: flex;
+        justify-content: space-between;
+        padding: 6px 0;
+        border-bottom: 1px dashed #ddd;
+    }
+
+    .salary-item:last-child {
+        border-bottom: none;
+    }
+</style>
+
+<div class="container py-4">
+    <!-- Header -->
+    <div class="mb-4 text-center border-bottom pb-3">
+        <h5 class="fw-bold mb-1">📊 Monthly Salary & Attendance Report</h5>
+        <p class="text-muted mb-0"><strong>{{ user.user_full_name() }}</strong> | Role: {{ user.role|capitalize }}</p>
+    </div>
+
+    <!-- Expandable Report Table -->
+    <div class="report-table table-responsive">
+        <table class="table align-middle mb-0">
+            <thead>
+                <tr>
+                    <th>Month</th>
+                    <th>Presents</th>
+                    <th>Lates</th>
+                    <th>Offs</th>
+                    <th>Absents</th>
+                    <th>Bonuses</th>
+                    <th>Penalties</th>
+                    <th>Final Salary (₨)</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for report in monthly_reports %}
+                <tr class="expand-row" data-bs-toggle="collapse" data-bs-target="#details{{ loop.index }}" aria-expanded="false" aria-controls="details{{ loop.index }}">
+                    <td><strong>{{ report.month_name }}</strong></td>
+                    <td>{{ report.total_presents }}</td>
+                    <td>{{ report.total_lates }}</td>
+                    <td>{{ report.total_offs }}</td>
+                    <td>{{ report.total_absents }}</td>
+                    <td class="text-success">+{{ report.total_bonus }}</td>
+                    <td class="text-danger">-{{ report.total_penalty }}</td>
+                    <td><strong>₨ {{ report.final_salary }}</strong></td>
+                    <td><i class="bi bi-chevron-down text-secondary"></i></td>
+                </tr>
+
+                <tr>
+                    <td colspan="9" class="p-0">
+                        <div class="collapse" id="details{{ loop.index }}">
+                            <div class="collapse-inner">
+                                <h6 class="fw-bold text-primary mb-2">📅 Daily Attendance — {{ report.month_name }}</h6>
+                                <table class="table table-sm mb-0">
+                                    <thead>
+                                        <tr class="table-light">
+                                            <th>Date</th>
+                                            <th>Status</th>
+                                            <th>Bonus</th>
+                                            <th>Penalty</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for day in report.daily_records %}
+                                        <tr>
+                                            <td>{{ day.date.strftime('%b %d, %Y') }}</td>
+                                            <td>
+                                                {% if day.status == 'Present' %}
+                                                    <span class="text-success fw-semibold">Present</span>
+                                                {% elif day.status == 'Late' %}
+                                                    <span class="text-warning fw-semibold">Late</span>
+                                                {% elif day.status == 'Off' %}
+                                                    <span class="text-primary fw-semibold">Off</span>
+                                                {% else %}
+                                                    <span class="text-danger fw-semibold">Absent</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>{{ day.bonus or 0 }}</td>
+                                            <!-- ✅ Responsive Tooltip for Penalties -->
+                                            <td class="text-danger"
+                                                {% if day.penalty_details %}
+                                                    data-bs-toggle="tooltip"
+                                                    data-bs-html="true"
+                                                    data-bs-placement="top"
+                                                    title="
+                                                    {% for p in day.penalty_details %}
+                                                        💰 <strong>{{ p.amount }}</strong> — {{ p.reason }}<br>
+                                                        <small>👤 Added by: {{ p.added_by }}</small><br>
+                                                    {% endfor %}
+                                                    ">
+                                                {% endif %}
+                                                {% if day.penalty and day.penalty > 0 %}
+                                                    -{{ day.penalty }}
+                                                {% else %}
+                                                    0
+                                                {% endif %}
+                                            </td>
+
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Salary Breakdown -->
+    <div class="salary-box mt-5">
+        <h6>💰 Salary Breakdown</h6>
+        <div class="salary-item"><span>Base Salary</span><span>₨ {{ user.salary }}</span></div>
+        <div class="salary-item"><span>Travel Allowance</span><span>₨ {{ user.travel_allowance_amount or 0 }}</span></div>
+        <div class="salary-item"><span>Late Deductions</span><span>-₨ {{ totals.total_lates * 400 }}</span></div>
+        <div class="salary-item"><span>Bonuses</span><span>+₨ {{ totals.total_bonus or 0 }}</span></div>
+        <div class="salary-item"><span>Penalties</span><span>-₨ {{ totals.total_penalty or 0 }}</span></div>
+        <div class="salary-item fw-bold text-success"><span>Final Salary</span><span>₨ {{ totals.final_salary }}</span></div>
+    </div>
+</div>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,203 @@
+{% extends "dashboard_base.html" %}
+{% block title %}User Report - {{ user.full_name() }}{% endblock %}
+
+{% block dashboard_content %}
+<div class="container-fluid py-3">
+
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h4 class="fw-bold text-primary mb-0">
+                <i class="bi bi-person-badge"></i> {{ user.user_full_name() }} ({{ user.username }})
+            </h4>
+            <small class="text-muted">Shift: {{ user.shift | capitalize }} | Joined: {{ user.created_at.strftime('%Y-%m-%d') }}</small>
+        </div>
+        <a href="{{ url_for('supervisor.team_members') }}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Back
+        </a>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-md-3">
+            <div class="card text-center border-success shadow-sm">
+                <div class="card-body">
+                    <h6 class="text-muted mb-1">Presents</h6>
+                    <h3 class="text-success fw-bold">{{ presents }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card text-center border-warning shadow-sm">
+                <div class="card-body">
+                <h6 class="text-muted mb-1">Lates</h6>
+                <h3 class="text-warning fw-bold">{{ lates }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card text-center border-danger shadow-sm">
+                <div class="card-body">
+                    <h6 class="text-muted mb-1">Absents</h6>
+                    <h3 class="text-danger fw-bold">{{ absents }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card text-center border-info shadow-sm">
+                <div class="card-body">
+                    <h6 class="text-muted mb-1">Paid Off Days</h6>
+                    <h3 class="text-info fw-bold">{{ off_days or 4 }}</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Salary Summary Table -->
+  <!--  <div class="card shadow-sm mb-4">
+        <div class="card-header bg-light d-flex justify-content-between align-items-center">
+            <h5 class="mb-0 text-secondary">
+                <i class="bi bi-cash-stack"></i> Salary Breakdown
+            </h5>
+        </div>
+        <div class="card-body p-3">
+            <div class="table-responsive">
+                <table class="table table-bordered align-middle mb-0">
+                    <tbody>
+                        <tr>
+                            <th class="bg-light" style="width: 40%;">Basic Salary</th>
+                            <td>PKR {{ "{:,.2f}".format(user.salary or 0) }}</td>
+                        </tr>
+                        <tr>
+                            <th class="bg-light">Per Day Salary</th>
+                            <td>PKR {{ "{:,.2f}".format(per_day_salary) }}</td>
+                        </tr>
+                        <tr>
+                            <th class="bg-light">Late Penalties</th>
+                            <td>PKR {{ "{:,.2f}".format(late_penalty) }}</td>
+                        </tr>
+                        <tr>
+                            <th class="bg-light">Total Penalties</th>
+                            <td>PKR {{ "{:,.2f}".format(penalties) }}</td>
+                        </tr>
+                        <tr>
+                            <th class="bg-light">Total Bonuses</th>
+                            <td>PKR {{ "{:,.2f}".format(bonuses) }}</td>
+                        </tr>
+                        <tr>
+                            <th class="bg-light">Travel Allowance</th>
+                            <td>PKR {{ "{:,.2f}".format(travel_allowance) }}</td>
+                        </tr>
+                        <tr class="table-success fw-bold">
+                            <th class="bg-success text-white">Net Salary (This Month)</th>
+                            <td class="text-success">PKR {{ "{:,.2f}".format(net_salary) }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    -->
+
+    <!-- Attendance Records Section -->
+    <div class="row g-3">
+        <!-- Present Records -->
+        <div class="col-md-6">
+            <div class="card shadow-sm">
+                <div class="card-header bg-success text-white">
+                    <h6 class="mb-0"><i class="bi bi-calendar-check"></i> Present Days</h6>
+                </div>
+                <div class="card-body p-2">
+                    <ul class="list-group list-group-flush">
+                        {% for record in attendance_records if record.status == 'Present' %}
+                            <li class="list-group-item">{{ record.date.strftime('%Y-%m-%d') }}</li>
+                        {% else %}
+                            <li class="list-group-item text-muted">No present records</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Approved Off Days -->
+        <div class="col-md-6">
+            <div class="card shadow-sm">
+                <div class="card-header bg-secondary text-white">
+                    <h6 class="mb-0"><i class="bi bi-calendar2-heart"></i> Approved Off Days</h6>
+                </div>
+                <div class="card-body p-2">
+                    <ul class="list-group list-group-flush">
+                        {% for d in off_dates %}
+                            <li class="list-group-item bg-light text-muted">{{ d.strftime('%Y-%m-%d') }}</li>
+                        {% else %}
+                            <li class="list-group-item text-muted">No approved off days</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Absent Days -->
+        <div class="col-md-6">
+            <div class="card shadow-sm">
+                <div class="card-header bg-danger text-white">
+                    <h6 class="mb-0"><i class="bi bi-calendar-x"></i> Absent Days</h6>
+                </div>
+                <div class="card-body p-2">
+                    <ul class="list-group list-group-flush">
+                        {% for d in absent_dates %}
+                            <li class="list-group-item">{{ d.strftime('%Y-%m-%d') }}</li>
+                        {% else %}
+                            <li class="list-group-item text-muted">No absents recorded</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Penalties -->
+        <div class="col-md-6">
+            <div class="card shadow-sm">
+                <div class="card-header bg-warning text-dark">
+                    <h6 class="mb-0"><i class="bi bi-exclamation-circle"></i> Penalties</h6>
+                </div>
+                <div class="card-body p-2">
+                    <ul class="list-group list-group-flush">
+                        {% for i in user.increments if i.increment_amount < 0 %}
+                            <li class="list-group-item d-flex justify-content-between">
+                                <span>{{ i.reason or 'Penalty' }}</span>
+                                <span class="text-danger">PKR {{ "{:,.2f}".format(i.increment_amount | abs) }}</span>
+                            </li>
+                        {% else %}
+                            <li class="list-group-item text-muted">No penalties recorded</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bonuses -->
+        <div class="col-md-6">
+            <div class="card shadow-sm">
+                <div class="card-header bg-info text-white">
+                    <h6 class="mb-0"><i class="bi bi-gift"></i> Bonuses</h6>
+                </div>
+                <div class="card-body p-2">
+                    <ul class="list-group list-group-flush">
+                        {% for i in user.increments if i.increment_amount > 0 %}
+                            <li class="list-group-item d-flex justify-content-between">
+                                <span>{{ i.reason or 'Bonus' }}</span>
+                                <span class="text-success">PKR {{ "{:,.2f}".format(i.increment_amount) }}</span>
+                            </li>
+                        {% else %}
+                            <li class="list-group-item text-muted">No bonuses recorded</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

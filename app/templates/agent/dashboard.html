@@ -1,0 +1,150 @@
+{% extends "dashboard_base.html" %}
+{% block title %}Agent Dashboard{% endblock %}
+{% block dashboard_content %}
+
+<style>
+    .dashboard-cards {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 15px;
+        margin-top: 15px;
+    }
+
+    .stat-card {
+        background: white;
+        border-radius: 12px;
+        padding: 18px;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+        text-align: center;
+        transition: all 0.3s ease;
+    }
+
+    .stat-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+
+    .stat-icon {
+        font-size: 1.8rem;
+        margin-bottom: 8px;
+    }
+
+    .stat-value {
+        font-size: 1.6rem;
+        font-weight: 700;
+        margin: 0;
+    }
+
+    .stat-label {
+        font-weight: 500;
+        color: #555;
+        margin-top: 3px;
+    }
+
+    .performance-section {
+        margin-top: 35px;
+        background: #f8f9fa;
+        border-radius: 12px;
+        padding: 25px;
+        text-align: center;
+        box-shadow: inset 0 0 8px rgba(0, 0, 0, 0.05);
+    }
+
+    .progress {
+        height: 20px;
+        border-radius: 15px;
+        overflow: hidden;
+    }
+
+    .progress-bar {
+        font-weight: 600;
+        line-height: 20px;
+        width: var(--bar-width);
+    }
+
+    .emoji-performance {
+        font-size: 2rem;
+        margin-top: 8px;
+    }
+
+</style>
+
+<div class="container py-4">
+
+    <!-- 🧍 Agent Info Header -->
+    <div class="mb-4 text-center border-bottom pb-3">
+        <h5 class="fw-bold mb-1">Welcome, {{ user.user_full_name() or user.username }} 👋</h5>
+        <p class="text-muted mb-1">Role: <strong>{{ user.role|capitalize }}|Shift: <strong>{{ user.shift|capitalize }}</strong></p>
+        <small class="text-secondary">Joined on {{ data.joining_date }}</small>
+    </div>
+
+    <!-- 📅 Monthly Attendance Summary -->
+    <div class="text-center mb-4 border-bottom pb-2">
+        <h5 class="fw-bold mb-1">📅 Monthly Summary — {{ data.month_name }}</h5>
+        <p class="text-muted mb-0">{{ current_date.strftime('%B %d, %Y') }}</p>
+    </div>
+
+    <!-- Dashboard Summary Cards -->
+    <div class="dashboard-cards">
+        <div class="stat-card border-start border-success border-3">
+            <div class="stat-icon text-success"><i class="bi bi-check-circle-fill"></i></div>
+            <p class="stat-value">{{ data.total_presents }}</p>
+            <p class="stat-label">Total Presents</p>
+        </div>
+
+        <div class="stat-card border-start border-warning border-3">
+            <div class="stat-icon text-warning"><i class="bi bi-clock-history"></i></div>
+            <p class="stat-value">{{ data.total_lates }}</p>
+            <p class="stat-label">Total Lates</p>
+        </div>
+
+        <div class="stat-card border-start border-primary border-3">
+            <div class="stat-icon text-primary"><i class="bi bi-moon-stars-fill"></i></div>
+            <p class="stat-value">{{ data.total_offs }}</p>
+            <p class="stat-label">Total Offs</p>
+        </div>
+
+        <div class="stat-card border-start border-danger border-3">
+            <div class="stat-icon text-danger"><i class="bi bi-x-circle-fill"></i></div>
+            <p class="stat-value">{{ data.total_absents }}</p>
+            <p class="stat-label">Total Absents</p>
+        </div>
+    </div>
+
+    <!-- 🎯 Performance Section -->
+    <div class="performance-section mt-5">
+        <h4 class="mb-3">🎯 Monthly Performance</h4>
+        <div class="progress mb-3">
+        <!-- /* stylelint-disable-next-line */ -->
+          <div class="progress-bar bg-success"
+              role="progressbar"
+              style="--bar-width: {{ data.performance or 0 }}%;"
+              aria-valuenow="{{ data.performance }}"
+              aria-valuemin="0"
+              aria-valuemax="100">
+              {{ data.performance }}%
+          </div>
+
+
+        </div>
+
+        {% if data.performance >= 90 %}
+            {% set performance_text = "Excellent Performance!" %}
+            {% set performance_emoji = "🌟💪" %}
+        {% elif data.performance >= 75 %}
+            {% set performance_text = "Good Job! Keep it up!" %}
+            {% set performance_emoji = "🔥👍" %}
+        {% elif data.performance >= 50 %}
+            {% set performance_text = "Needs Improvement!" %}
+            {% set performance_emoji = "⚠️" %}
+        {% else %}
+            {% set performance_text = "Poor Performance! Try Harder!" %}
+            {% set performance_emoji = "😞" %}
+        {% endif %}
+
+        <h5 class="fw-bold text-dark">{{ performance_text }}</h5>
+        <div class="emoji-performance">{{ performance_emoji }}</div>
+    </div>
+</div>
+
+{% endblock %}

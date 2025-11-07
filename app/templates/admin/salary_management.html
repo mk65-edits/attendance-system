@@ -1,0 +1,175 @@
+{% extends "dashboard_base.html" %}
+{% block title %}Salary Management - Office Connect{% endblock %}
+
+{% block dashboard_content %}
+
+
+<div class="container-fluid py-3">
+
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h4 class="mb-0"><i class="bi bi-cash-stack"></i> Salary Management</h4>
+    </div>
+
+    <!-- 🔹 Search + Filter Row -->
+    <div class="row g-2 align-items-center mb-4">
+        <div class="col-12 col-md-4">
+            <input type="text" id="userSearch" class="form-control" placeholder="🔍 Search users by name or username">
+        </div>
+        <div class="col-6 col-md-3">
+            <select id="companyFilter" class="form-select">
+                <option value="">All Companies</option>
+                {% for company in companies %}
+                    <option value="{{ company.id }}">{{ company.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-6 col-md-3">
+            <select id="shiftFilter" class="form-select">
+                <option value="">All Shifts</option>
+                <option value="morning">Morning</option>
+                <option value="evening">Evening</option>
+                <option value="night">Night</option>
+            </select>
+        </div>
+    </div>
+
+    <!-- 🔹 Main Card -->
+    <div class="card shadow-sm">
+
+
+        <div class="table-responsive">
+            <table class="table align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th>#</th>
+                        <th>Full Name</th>
+                        <th>Username</th>
+                        <th>Company</th>
+                        <th>Role</th>
+                        <th>Shift</th>
+                        <th>Previous Salary</th>
+                        <th>Travel Allowance</th>
+                        <th>Incremented Salary</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="salaryTableBody">
+                    {% for user in users %}
+                    <tr data-company-id="{{ user.company.id if user.company else '' }}">
+                        <td>{{ loop.index }}</td>
+                        <td>{{ user.first_name }} {{ user.last_name }}</td>
+                        <td>{{ user.username }}</td>
+                        <td>{{ user.company.name if user.company else '-' }}</td>
+                        <td>{{ user.role or '-' }}</td>
+                        <td>{{ user.shift or '-' }}</td>
+                        <td>
+                            {% if user.increments %}
+                                Rs. {{ "%.0f"|format(user.increments[-1].previous_salary) }}
+                            {% else %}
+                                Rs. {{ "%.0f"|format(user.salary or 0) }}
+                            {% endif %}
+                        </td>
+                        <td>Rs. {{ "%.0f"|format(user.travel_allowance_amount or 0) }}</td>
+                        <td>
+                            {% if user.increments %}
+                                Rs. {{ "%.0f"|format(user.increments[-1].new_salary) }}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                        <td>
+                            <button 
+                                class="btn btn-sm btn-outline-success" 
+                                data-bs-toggle="modal" 
+                                data-bs-target="#incrementModal" 
+                                data-user-id="{{ user.id }}" 
+                                data-user-name="{{ user.first_name }} {{ user.last_name }}">
+                                <i class="bi bi-plus-circle"></i> Add Increment
+                            </button>
+                            <a href="{{ url_for('admin.view_increment_history', user_id=user.id) }}" class="btn btn-sm btn-outline-primary">
+                                <i class="bi bi-clock-history"></i> History
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <!-- ✅ Shared Add Increment Modal -->
+    <div class="modal fade" id="incrementModal" tabindex="-1" aria-labelledby="incrementModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+        <form id="incrementForm" method="POST">
+            <div class="modal-header">
+            <h5 class="modal-title">Add Salary Increment</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+            <p class="fw-semibold mb-2">Employee: <span id="modalUserName"></span></p>
+            <div class="mb-3">
+                <label>Increment Amount (Rs.)</label>
+                <input type="number" step="0.01" name="increment_amount" class="form-control" required>
+            </div>
+            <div class="mb-3">
+                <label>Reason</label>
+                <textarea name="reason" class="form-control" placeholder="Reason for increment" required></textarea>
+            </div>
+            </div>
+            <div class="modal-footer">
+            <button type="submit" class="btn btn-success">Save Increment</button>
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+            </div>
+        </form>
+        </div>
+    </div>
+    </div>
+</div>
+
+<!-- ✅ Bootstrap JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+<!-- ✅ Filtering Script -->
+<script>
+document.getElementById('userSearch').addEventListener('input', filterUsers);
+document.getElementById('companyFilter').addEventListener('change', filterUsers);
+document.getElementById('shiftFilter').addEventListener('change', filterUsers);
+
+function filterUsers() {
+    const search = document.getElementById('userSearch').value.toLowerCase();
+    const company = document.getElementById('companyFilter').value;
+    const shift = document.getElementById('shiftFilter').value;
+    const rows = document.querySelectorAll('#salaryTableBody tr');
+
+    rows.forEach(row => {
+        const name = row.children[1]?.innerText.toLowerCase();
+        const username = row.children[2]?.innerText.toLowerCase();
+        const role = row.children[4]?.innerText.toLowerCase();
+        const companyId = row.getAttribute('data-company-id');
+        const shiftText = row.children[5]?.innerText.toLowerCase();
+
+        const matchesSearch = !search || name.includes(search) || username.includes(search) || role.includes(search);
+        const matchesCompany = !company || companyId === company;
+        const matchesShift = !shift || shiftText === shift;
+
+        row.style.display = (matchesSearch && matchesCompany && matchesShift) ? '' : 'none';
+    });
+}
+//function for add increment model.
+const incrementModal = document.getElementById('incrementModal');
+const incrementForm = document.getElementById('incrementForm');
+const modalUserName = document.getElementById('modalUserName');
+
+incrementModal.addEventListener('show.bs.modal', event => {
+    const button = event.relatedTarget;
+    const userId = button.getAttribute('data-user-id');
+    const userName = button.getAttribute('data-user-name');
+
+    // Update modal content
+    modalUserName.textContent = userName;
+
+    // ✅ Corrected line here
+    incrementForm.action = `/admin/add-increment/${userId}`;
+});
+</script>
+{% endblock %}

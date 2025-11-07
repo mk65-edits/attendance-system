@@ -1,0 +1,59 @@
+{% if records and records|length > 0 %}
+<div class="table-responsive">
+    <table class="table table-hover align-middle">
+        <thead class="table-primary">
+            <tr>
+                <th>#</th>
+                <th>Employee</th>
+                <th>Company</th>
+                <th>Shift</th>
+                <th>Date</th>
+                <th>Time</th>
+                <th>Status</th>
+                <th>Late</th>
+                <th>Bonus</th>
+                <th>Penalty</th>
+                <th>Marked By</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for r in records %}
+            <tr>
+                <td>{{ loop.index }}</td>
+                <td>{{ r.user.full_name() }}</td>
+                <td>{{ r.user.company.name if r.user.company else '-' }}</td>
+                <td>{{ r.user.shift or '-' }}</td>
+                <td>{{ r.date.strftime('%d-%b-%Y') }}</td>
+                <td>{{ r.time.strftime('%I:%M %p') }}</td>
+                <td>
+                    {% if r.status == 'Present' %}
+                        <span class="badge bg-success">{{ r.status }}</span>
+                    {% elif r.status == 'Absent' %}
+                        <span class="badge bg-danger">{{ r.status }}</span>
+                    {% elif r.status == 'Off' %}
+                        <span class="badge bg-secondary">{{ r.status }}</span>
+                    {% else %}
+                        <span class="badge bg-warning text-dark">{{ r.status }}</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if r.is_late %}
+                        <span class="text-danger fw-semibold">Yes</span>
+                    {% else %}
+                        <span class="text-muted">No</span>
+                    {% endif %}
+                </td>
+                <td>{{ "%.2f"|format(r.bonus or 0.0) }}</td>
+                <td>{{ "%.2f"|format(r.penalty or 0.0) }}</td>
+                <td>{{ r.marker.full_name() if r.marker else '—' }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<div class="text-center py-5 text-muted">
+    <i class="bi bi-clipboard-x" style="font-size: 3rem;"></i>
+    <p class="mt-3">No attendance records found for the selected filters.</p>
+</div>
+{% endif %}
