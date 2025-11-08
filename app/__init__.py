@@ -29,7 +29,7 @@ def create_app():
     db.init_app(app)
     migrate.init_app(app, db)
     login_manager.init_app(app)
-    socketio.init_app(app)  # ✅ Initialize SocketIO here
+    socketio.init_app(app, cors_allowed_origins="*")
 
     # ---------------------------------------
     # Import Models
@@ -60,36 +60,30 @@ def create_app():
         return dict(app_name="Office Connect")
 
     # ---------------------------------------
-    # CLI Command: Create Default Admin
+    # Ensure Default Admin Exists
     # ---------------------------------------
-    @app.cli.command("create-admin")
-    def create_admin():
-        """Creates a default global admin user if none exists."""
+    def ensure_default_admin():
         from werkzeug.security import generate_password_hash
-
-        with app.app_context():
-            admin = User.query.filter_by(username='admin').first()
-            if not admin:
-                admin = User(
-                    first_name='System',
-                    last_name='Admin',
-                    username='admin',
-                    email='admin@officeconnect.local',
-                    role='admin',  # Global admin
-                    company=None,  # No company assigned
-                    password_hash=generate_password_hash('MK65technologies')
-                )
-                db.session.add(admin)
-                db.session.commit()
-                print("✅ Default admin created (username: admin, password: MK65technologies)")
-            else:
-                print("⚠️ Admin already exists.")
-
+        admin = User.query.filter_by(username='admin').first()
+        if not admin:
+            admin = User(
+                first_name="System",
+                last_name="Admin",
+                username="admin",
+                email="admin@officeconnect.local",
+                role="admin",
+                is_active=True,
+                password_hash=generate_password_hash("admin123")
+            )
+            db.session.add(admin)
+            db.session.commit()
+            print("✅ Default admin created (username='admin', password='admin123')")
 
     # ---------------------------------------
-    # Ensure Database Tables Exist
+    # Ensure Database Tables Exist & Create Admin
     # ---------------------------------------
     with app.app_context():
-        db.create_all()
+        db.create_all()           # Create tables if they don’t exist
+        ensure_default_admin()    # Safe, runs once at startup
 
     return app

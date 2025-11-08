@@ -8,35 +8,11 @@ auth_bp = Blueprint('auth', __name__, url_prefix='/auth')
 
 
 # --------------------------------------
-# Ensure Default Admin User Exists
-# --------------------------------------
-def ensure_default_admin():
-    """Create a default admin account if it doesn't exist."""
-    admin = User.query.filter_by(username='admin').first()
-    if not admin:
-        admin = User(
-            first_name="System",
-            last_name="Admin",
-            username="admin",
-            email="admin@officeconnect.local",
-            role="admin",
-            is_active=True
-        )
-        admin.set_password("admin123")  # Default password
-        db.session.add(admin)
-        db.session.commit()
-        print("✅ Default admin user created: username='admin', password='admin123'")
-
-
-# --------------------------------------
 # Login Route (Database-based)
 # --------------------------------------
 @auth_bp.route('/login', methods=['GET', 'POST'])
 def login():
     form = LoginForm()
-
-    # Ensure default admin exists before login
-    ensure_default_admin()
 
     # Redirect if already logged in
     if current_user.is_authenticated:
@@ -57,7 +33,7 @@ def login():
         # Invalid credentials
         if not user or not user.check_password(password):
             flash("❌ Invalid username or password", "danger")
-            return redirect(url_for('auth.login'))  # 🔹 Important: stop further code
+            return redirect(url_for('auth.login'))
 
         # Inactive user
         if not user.is_active:
