@@ -12,11 +12,17 @@ app = create_app()
 def home_redirect():
     return redirect(url_for('auth.login'))
 
-# ✅ Run app using SocketIO with Eventlet
 if __name__ == "__main__":
     with app.app_context():
-        db.create_all()
+        db.create_all()  # Ensure tables exist before starting
 
-    # 🔹 host="0.0.0.0" allows access from other devices on your local network
-    # 🔹 debug=True is fine for local development (not production)
-    socketio.run(app, host="0.0.0.0", port=5000, debug=True)
+    # 🔹 Run with Eventlet for WebSockets support
+    # 🔹 host="0.0.0.0" allows network access
+    # 🔹 debug=True for local development only
+    socketio.run(
+        app,
+        host="0.0.0.0",
+        port=5000,
+        debug=True,           # Set to False in production
+        use_reloader=True,    # Optional: auto-reload on code changes
+    )
