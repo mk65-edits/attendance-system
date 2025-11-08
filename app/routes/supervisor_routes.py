@@ -12,7 +12,8 @@ import os
 from werkzeug.security import check_password_hash, generate_password_hash
 from app.routes.broadcasts import get_broadcast_view_data
 from app.utils.uploads import ALLOWED_DOC_EXT, ALLOWED_IMAGE_EXT, remove_user_file, save_user_file
-
+from datetime import datetime, date
+import pytz
 
 
 # Blueprint setup
@@ -378,26 +379,28 @@ def attendance_dashboard():
 
 
 # ✅ Route: Mark Attendance
-# ✅ Route: Mark Attendance
 @supervisor_bp.route('/mark_attendance', methods=['GET', 'POST'])
 @login_required
 def mark_attendance():
+
+
+    pk_tz = pytz.timezone("Asia/Karachi")
+    now_pk = datetime.now(pk_tz)
+    today = now_pk.date()
+
     shift = request.args.get('shift', 'morning')
     search = request.args.get('search', '').strip()
 
-    # 🔹 Ensure only supervisors access this page
     if current_user.role != 'supervisor':
         flash("Access denied.", "danger")
         return redirect(url_for('auth.login'))
 
-    # 🔹 Filter only users in the same company as the supervisor
     query = User.query.filter(
         User.company_id == current_user.company_id,
         User.role.in_(['agent', 'supervisor']),
         User.shift == shift
     )
 
-    # 🔹 Optional search by username or name
     if search:
         query = query.filter(
             (User.username.ilike(f"%{search}%")) |
@@ -406,34 +409,24 @@ def mark_attendance():
         )
 
     users = query.all()
-    today = date.today()
 
-    # ✅ Attendance marking
     if request.method == 'POST':
         for user in users:
             status = request.form.get(f'status_{user.id}')
             if not status:
                 continue
 
-            # 🔹 Prevent duplicate marking for the same date
             attendance = Attendance.query.filter_by(user_id=user.id, date=today).first()
-
             if not attendance:
                 attendance = Attendance(
                     user_id=user.id,
                     date=today,
-                    time=datetime.now().time(),
+                    time=now_pk.time(),
                     marked_by=current_user.id
                 )
                 db.session.add(attendance)
 
-            # 🔹 Update main status text
             attendance.status = status
-
-            # 🔹 Set boolean flags properly
-            attendance.is_present = (status == 'Present')
-            attendance.is_absent = (status == 'Absent')
-            attendance.is_off = (status == 'Off')
             attendance.is_late = (status == 'Late')
 
         db.session.commit()
@@ -441,14 +434,7 @@ def mark_attendance():
         return redirect(url_for('supervisor.mark_attendance', shift=shift, search=search))
 
     clearances = Clearance.query.order_by(Clearance.date_added.desc()).limit(10).all()
-    return render_template(
-        'supervisor/mark_attendance.html',
-        users=users,
-        shift=shift,
-        search=search,
-        clearances=clearances
-    )
-
+    return render_template('supervisor/mark_attendance.html', users=users, shift=shift, search=search, clearances=clearances)
 
 
 
