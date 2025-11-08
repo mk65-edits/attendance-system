@@ -6,6 +6,7 @@ from datetime import datetime
 from sqlalchemy import or_
 from collections import defaultdict
 from flask_socketio import emit
+import pytz
 
 bp = Blueprint("broadcasts", __name__, url_prefix="/broadcasts")
 
@@ -28,13 +29,18 @@ def create_broadcast():
         flash("Message is required.", "danger")
         return redirect(request.referrer or url_for("broadcasts.view_broadcasts"))
 
-    # ✅ Create broadcast entry
+    # 🔹 Set timezone (Pakistan Standard Time example)
+    PKT = pytz.timezone("Asia/Karachi")
+    now = datetime.now(PKT)
+
+    # ✅ Create broadcast entry with timezone-aware datetime
     b = Broadcast(
         sender_id=current_user.id,
         title=title or None,
         message=message,
         target=target,
-        company_id=company_id
+        company_id=company_id,
+        created_at=now
     )
     db.session.add(b)
     db.session.commit()
@@ -58,7 +64,7 @@ def create_broadcast():
 
     recipient_ids = [r.id for r in recipients_query.with_entities(User.id).all()]
 
-    # ✅ Emit to each recipient
+    # ✅ Emit to each recipient via Socket.IO
     for uid in recipient_ids:
         socketio.emit("new_broadcast", payload, room=f"user_{uid}")
 
@@ -66,7 +72,6 @@ def create_broadcast():
     flash("Broadcast sent successfully!", "success")
 
     return redirect(url_for("broadcasts.view_broadcasts"))
-
 
 # ==========================================================
 # 🔹 API: Fetch unread broadcasts
