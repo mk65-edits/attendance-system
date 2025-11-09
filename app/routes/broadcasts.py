@@ -2,7 +2,7 @@ from flask import Blueprint, render_template, request, redirect, url_for, flash,
 from flask_login import login_required, current_user
 from app import db, socketio
 from app.models import Broadcast, BroadcastSeen, User, Company
-from datetime import datetime
+from datetime import datetime, timezone
 from sqlalchemy import or_
 from collections import defaultdict
 from flask_socketio import emit
@@ -171,25 +171,35 @@ def view_broadcasts():
 
 
 # ==========================================================
-# 🔹 Delete broadcast (Admin only)
+# 🔹 Delete Broadcast (Admin Only)
 # ==========================================================
 @bp.route("/delete/<int:id>", methods=["POST"])
 @login_required
 def delete_broadcast(id):
-    broadcast = Broadcast.query.get_or_404(id)
-    time_diff = (datetime.utcnow() - broadcast.created_at).total_seconds()
+    # ✅ Ensure only admin can delete
+    if current_user.role != "admin":
+        flash("Unauthorized access.", "danger")
+        return redirect(url_for("broadcasts.view_broadcasts"))
 
-    if time_diff <= 600:
+    # ✅ Fetch broadcast
+    broadcast = Broadcast.query.get_or_404(id)
+
+    # ✅ Check 10-minute deletion window
+    time_diff = (datetime.now(timezone.utc) - broadcast.created_at).total_seconds()
+
+    if time_diff <= 600:  # 600 seconds = 10 minutes
+        # ✅ Delete broadcast; all BroadcastSeen entries will be removed automatically via cascade
         db.session.delete(broadcast)
         db.session.commit()
+
+        # ✅ Notify clients via Socket.IO
         socketio.emit("admin_broadcast_update", {})
-        flash("Broadcast deleted successfully.", "success")
+
+        flash("Broadcast and all related seen history deleted successfully.", "success")
     else:
         flash("You can only delete a broadcast within 10 minutes of creation.", "warning")
 
     return redirect(url_for("broadcasts.view_broadcasts"))
-
-
 # ==========================================================
 # 🔹 Helper: View details per broadcast
 # ==========================================================
