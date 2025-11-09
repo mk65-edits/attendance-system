@@ -185,7 +185,8 @@ def delete_broadcast(id):
     broadcast = Broadcast.query.get_or_404(id)
 
     # ✅ Check 10-minute deletion window
-    time_diff = (datetime.now(timezone.utc) - broadcast.created_at).total_seconds()
+    # Use naive datetime comparison
+    time_diff = (datetime.utcnow() - broadcast.created_at).total_seconds()
 
     if time_diff <= 600:  # 600 seconds = 10 minutes
         # ✅ Delete broadcast; all BroadcastSeen entries will be removed automatically via cascade
