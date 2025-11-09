@@ -1,0 +1,12 @@
+# Python compiled files
+__pycache__/
+*.pyc
+
+# SQLite database
+instance/attendance.db
+
+# Virtual environment
+venv/
+
+# Logs
+logs/
