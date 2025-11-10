@@ -59,10 +59,13 @@ def create_app():
     def inject_globals():
         return dict(app_name="Office Connect")
 
-    # ---------------------------------------
-    # Ensure Default Admin Exists
-    # ---------------------------------------
-    def ensure_default_admin():
+    return app
+
+
+def ensure_default_admin(app):
+    """Creates default admin if not exists. Run after migrations."""
+    with app.app_context():
+        from app.models import User
         admin = User.query.filter_by(username='admin').first()
         if not admin:
             admin = User(
@@ -77,12 +80,3 @@ def create_app():
             db.session.add(admin)
             db.session.commit()
             print("✅ Default admin created (username='admin', password='admin123')")
-
-    # ---------------------------------------
-    # Ensure Database Tables Exist & Create Admin
-    # ---------------------------------------
-    with app.app_context():
-        db.create_all()        # Create tables if they don’t exist
-        ensure_default_admin() # Safe, runs once at startup
-
-    return app
