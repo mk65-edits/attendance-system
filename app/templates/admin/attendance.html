@@ -43,22 +43,38 @@
           {% for month_key, month in data.months.items() %}
           <div class="accordion mb-3" id="monthAccordion{{ company_id }}">
             <div class="accordion-item border-0">
-              <h2 class="accordion-header" id="headingMonth{{ company_id }}{{ loop.index }}">
-                <button class="accordion-button collapsed bg-white" type="button" data-bs-toggle="collapse"
-                  data-bs-target="#collapseMonth{{ company_id }}{{ loop.index }}" aria-expanded="false"
-                  aria-controls="collapseMonth{{ company_id }}{{ loop.index }}">
+              <h2 
+                class="accordion-header d-flex justify-content-between align-items-center bg-white border rounded-top px-2"
+                id="headingMonth{{ company_id }}{{ loop.index }}"
+                style="border-bottom: none;"
+              >
+                <button
+                  class="accordion-button collapsed bg-white flex-grow-1 text-start shadow-none border-0"
+                  type="button"
+                  data-bs-toggle="collapse"
+                  data-bs-target="#collapseMonth{{ company_id }}{{ loop.index }}"
+                  aria-expanded="false"
+                  aria-controls="collapseMonth{{ company_id }}{{ loop.index }}"
+                  style="box-shadow: none;"
+                >
                   📆 {{ month.label }}
-                  <span class="ms-auto text-muted small">
-                    Present: {{ month.summary.presents }} | Late: {{ month.summary.lates }} |
-                    Absent: {{ month.summary.absents }} | Off: {{ month.summary.offs }}
+                  <span class="ms-3 text-muted small">
+                    Present: {{ month.summary.presents }} |
+                    Late: {{ month.summary.lates }} |
+                    Absent: {{ month.summary.absents }} |
+                    Off: {{ month.summary.offs }}
                   </span>
                 </button>
-                    <a href="{{ url_for('admin.download_attendance_report', company_id=data.company.id, month=month_key) }}"
-                      class="btn btn-sm btn-success"
-                      style="float:right;">
-                      <i class="fa fa-download"></i> Download Excel
-                    </a>
+
+                <a
+                  href="{{ url_for('admin.download_attendance_report', company_id=data.company.id, month=month_key) }}"
+                  class="btn btn-sm btn-success me-3"
+                  style="white-space: nowrap;"
+                >
+                  <i class="fa fa-download"></i> Download Excel
+                </a>
               </h2>
+
 
               <div id="collapseMonth{{ company_id }}{{ loop.index }}" class="accordion-collapse collapse"
                 aria-labelledby="headingMonth{{ company_id }}{{ loop.index }}"
