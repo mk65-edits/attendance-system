@@ -613,31 +613,40 @@ def get_company_users_json(company_id):
 @login_required
 def attendance():
     from calendar import month_name
+    from datetime import date, datetime, timedelta
+    from collections import defaultdict
+    import calendar
 
     # Get filters
     month_filter = request.args.get('month', '')
     shift_filter = request.args.get('shift', '').lower().strip()
 
-    # If no month given, use current month
+    # If no month given, use current month (YYYY-MM)
     if not month_filter:
         month_filter = date.today().strftime("%Y-%m")
 
-    # Determine companies visible to this admin
+    # Convert to actual date range for PostgreSQL
+    year, month = map(int, month_filter.split('-'))
+    start_date = date(year, month, 1)
+    _, last_day = calendar.monthrange(year, month)
+    end_date = date(year, month, last_day)
+
+    # Determine visible companies
     if current_user.role.lower() == "admin":
         companies = Company.query.order_by(Company.name.asc()).all()
     else:
-        # Supervisor / manager only sees their own company
         companies = [current_user.company] if current_user.company else []
 
     attendance_data = {}
 
     for company in companies:
-        # Query all attendance records for this company and month
+        # ✅ Efficient date range filter (PostgreSQL optimized)
         query = (
             Attendance.query
             .join(User, Attendance.user_id == User.id)
             .filter(User.company_id == company.id)
-            .filter(Attendance.date.like(f"{month_filter}-%"))
+            .filter(Attendance.date >= start_date)
+            .filter(Attendance.date <= end_date)
         )
 
         if shift_filter:
@@ -738,7 +747,6 @@ def attendance():
         current_date=date.today(),
         clearances=clearances,
     )
-
 
 # ==========================================================
 # 📤 DOWNLOAD ATTENDANCE REPORT (EXCEL) - company + month
