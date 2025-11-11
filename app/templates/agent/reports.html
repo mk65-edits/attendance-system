@@ -3,129 +3,186 @@
 {% block dashboard_content %}
 
 <style>
-    /* ===== Dashboard Card Grid ===== */
-    .dashboard-cards {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-        gap: 15px;
-        margin-bottom: 25px;
-    }
+/* ===== Dashboard Card Grid ===== */
+.dashboard-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 15px;
+    margin-bottom: 25px;
+}
 
-    .stat-card {
-        background: white;
-        border-radius: 15px;
-        padding: 20px;
-        box-shadow: 0 3px 8px rgba(0, 0, 0, 0.08);
-        text-align: center;
-        transition: all 0.3s ease;
-    }
+.stat-card {
+    background: white;
+    border-radius: 15px;
+    padding: 20px;
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.08);
+    text-align: center;
+    transition: all 0.3s ease;
+}
 
-    .stat-card:hover {
-        transform: translateY(-4px);
-        box-shadow: 0 6px 14px rgba(0, 0, 0, 0.1);
-    }
+.stat-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 6px 14px rgba(0, 0, 0, 0.1);
+}
 
-    .stat-icon {
-        font-size: 1.8rem;
-        margin-bottom: 8px;
-    }
+.stat-icon {
+    font-size: 1.8rem;
+    margin-bottom: 8px;
+}
 
-    /* ===== Table Section ===== */
+/* ===== Expandable Report Table ===== */
+.report-table {
+    background: white;
+    border-radius: 15px;
+    box-shadow: 0 3px 8px rgba(0,0,0,0.05);
+    overflow: auto; /* both horizontal and vertical scroll */
+    max-height: 70vh; /* vertical scroll if content exceeds */
+    width: 100%;
+}
+
+.report-table table {
+    width: 100%;
+    min-width: 100%; /* horizontal scroll if screen is narrow */
+    border-collapse: collapse;
+}
+
+.report-table th, 
+.report-table td {
+    white-space: nowrap;
+    padding: 10px 12px;
+    vertical-align: middle;
+    text-align: left;
+}
+
+.report-table thead th {
+    background-color: #f8f9fa;
+    font-weight: 600;
+}
+
+.expand-row {
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.expand-row:hover {
+    background-color: #f1f1f1;
+}
+
+.collapse-inner {
+    background: #fcfcfc;
+    padding: 10px;
+    border-top: 1px solid #eee;
+}
+
+.collapse-inner .table-responsive {
+    overflow-x: auto;
+}
+
+.collapse-inner table {
+    width: 100%;
+    min-width: 700px; /* horizontal scroll for inner table */
+}
+
+.collapse-inner th, .collapse-inner td {
+    white-space: nowrap;
+    padding: 6px 10px;
+}
+
+/* ===== Salary Summary Box ===== */
+.salary-box {
+    background: #f8f9fa;
+    border-radius: 10px;
+    padding: 20px;
+    margin-top: 25px;
+    box-shadow: inset 0 0 8px rgba(0,0,0,0.03);
+}
+
+.salary-box h6 {
+    font-weight: 700;
+    margin-bottom: 15px;
+}
+
+.salary-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 6px 0;
+    border-bottom: 1px dashed #ddd;
+    font-size: 0.95rem;
+}
+
+.salary-item:last-child {
+    border-bottom: none;
+}
+
+/* ===== Tooltip Custom Styling ===== */
+.tooltip-inner {
+    max-width: 250px;
+    text-align: left;
+    white-space: normal;
+    font-size: 0.85rem;
+    background-color: #343a40;
+}
+
+.tooltip.show {
+    opacity: 1;
+}
+
+/* ===== Responsive Adjustments ===== */
+@media (max-width: 992px) {
+    .report-table table {
+        min-width: 700px;
+    }
+    .collapse-inner table {
+        min-width: 600px;
+    }
+}
+
+@media (max-width: 576px) {
+    .report-table table, .collapse-inner table {
+        min-width: 100%;
+        font-size: 0.85rem;
+    }
+    .collapse-inner td, .collapse-inner th {
+        padding: 4px 6px;
+    }
+    .salary-box {
+        padding: 16px;
+    }
+}
+/* ===== Very Small Screen Adjustments (≤360px) ===== */
+@media (max-width: 360px) {
     .report-table {
-        background: white;
-        border-radius: 15px;
-        box-shadow: 0 3px 8px rgba(0, 0, 0, 0.05);
-        overflow-x: auto;
-        -webkit-overflow-scrolling: touch;
+        max-height: 60vh; /* reduce vertical height for small screens */
     }
 
-    .table {
-        min-width: 800px;
+    .report-table table,
+    .collapse-inner table {
+        min-width: 100%; /* fit small screens horizontally */
+        font-size: 0.75rem; /* smaller font */
     }
 
-    .table thead {
-        background-color: #f8f9fa;
-        font-weight: 600;
+    .report-table th,
+    .report-table td,
+    .collapse-inner th,
+    .collapse-inner td {
+        padding: 4px 6px; /* tighter spacing */
     }
 
-    .expand-row {
-        cursor: pointer;
-        transition: background-color 0.2s ease;
-    }
-
-    .expand-row:hover {
-        background-color: #f1f1f1;
+    .salary-box {
+        padding: 14px;
+        font-size: 0.85rem;
     }
 
     .collapse-inner {
-        background: #fcfcfc;
-        padding: 10px 20px;
-        border-top: 1px solid #eee;
+        padding: 8px;
     }
 
-    /* ===== Salary Summary Box ===== */
-    .salary-box {
-        background: #f8f9fa;
-        border-radius: 10px;
-        padding: 20px;
-        margin-top: 25px;
-        box-shadow: inset 0 0 8px rgba(0,0,0,0.03);
+    /* Reduce icon size for small screens */
+    .toggle-icon {
+        font-size: 0.9rem;
     }
+}
 
-    .salary-box h6 {
-        font-weight: 700;
-        margin-bottom: 15px;
-    }
-
-    .salary-item {
-        display: flex;
-        justify-content: space-between;
-        padding: 6px 0;
-        border-bottom: 1px dashed #ddd;
-        font-size: 0.95rem;
-    }
-
-    .salary-item:last-child {
-        border-bottom: none;
-    }
-
-    /* ===== Tooltip Custom Styling ===== */
-    .tooltip-inner {
-        max-width: 250px;
-        text-align: left;
-        white-space: normal;
-        font-size: 0.85rem;
-        background-color: #343a40;
-    }
-
-    .tooltip.show {
-        opacity: 1;
-    }
-
-    /* ===== Responsive Behavior ===== */
-    @media (max-width: 768px) {
-        .table {
-            font-size: 0.85rem;
-        }
-
-        .collapse-inner {
-            padding: 10px;
-        }
-
-        .salary-box {
-            padding: 15px;
-        }
-
-        .salary-item {
-            flex-direction: column;
-            align-items: flex-start;
-        }
-
-        .salary-item span:last-child {
-            margin-top: 3px;
-            font-weight: 600;
-        }
-    }
 </style>
 
 <div class="container py-4">
@@ -137,131 +194,143 @@
             Role: {{ user.role|capitalize }}
         </p>
     </div>
-<!-- Expandable Report Table -->
-<div class="report-table table-responsive">
-    <table class="table align-middle mb-0">
-        <thead>
-            <tr>
-                <th>Month</th>
-                <th>Presents</th>
-                <th>Lates</th>
-                <th>Offs</th>
-                <th>Absents</th>
-                <th>Bonuses</th>
-                <th>Penalties</th>
-                <th>Final Salary (₨)</th>
-                <th></th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for report in monthly_reports %}
-            <tr class="expand-row" data-bs-toggle="collapse" data-bs-target="#details{{ loop.index }}" aria-expanded="false" aria-controls="details{{ loop.index }}">
-                <td><strong>{{ report.month_name }}</strong></td>
-                <td>{{ report.total_presents }}</td>
-                <td>{{ report.total_lates }}</td>
-                <td>{{ report.total_offs }}</td>
-                <td>{{ report.total_absents }}</td>
-                <td class="text-success">+{{ report.total_bonus }}</td>
-                <td class="text-danger">-{{ report.total_penalty }}</td>
-                <td><strong>₨ {{ report.final_salary }}</strong></td>
-                <td><i class="bi bi-chevron-down text-secondary"></i></td>
-            </tr>
 
-            <tr>
-                <td colspan="9" class="p-0">
-                    <div class="collapse" id="details{{ loop.index }}">
-                        <div class="collapse-inner">
-                            <h6 class="fw-bold text-primary mb-2">📅 Daily Attendance — {{ report.month_name }}</h6>
-                            <div class="table-responsive">
-                                <table class="table table-sm mb-0">
-                                    <thead class="table-light">
-                                        <tr>
-                                            <th>Date</th>
-                                            <th>Status</th>
-                                            <th>Bonus</th>
-                                            <th>Penalty</th>
-                                            <th>Marked by</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {% for day in report.daily_records %}
-                                        <tr>
-                                            <td>{{ day.date.strftime('%b %d, %Y') }}</td>
-                                            <td>
-                                                {% if day.status == 'Present' %}
-                                                    <span class="text-success fw-semibold">Present</span>
-                                                {% elif day.status == 'Late' %}
-                                                    <span class="text-warning fw-semibold">Late</span>
-                                                {% elif day.status == 'Off' %}
-                                                    <span class="text-primary fw-semibold">Off</span>
-                                                {% else %}
-                                                    <span class="text-danger fw-semibold">Absent</span>
-                                                {% endif %}
-                                            </td>
-                                            <td>{{ day.bonus or 0 }}</td>
+    <!-- Expandable Report Table -->
+    <div class="report-table">
+        <table class="table align-middle mb-0">
+            <thead>
+                <tr>
+                    <th>Month</th>
+                    <th>Presents</th>
+                    <th>Lates</th>
+                    <th>Offs</th>
+                    <th>Absents</th>
+                    <th>Bonuses</th>
+                    <th>Penalties</th>
+                    <th>Final Salary (₨)</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for report in monthly_reports %}
+                <tr class="expand-row" data-bs-toggle="collapse" data-bs-target="#details{{ loop.index }}" aria-expanded="false" aria-controls="details{{ loop.index }}">
+                    <td><strong>{{ report.month_name }}</strong></td>
+                    <td>{{ report.total_presents }}</td>
+                    <td>{{ report.total_lates }}</td>
+                    <td>{{ report.total_offs }}</td>
+                    <td>{{ report.total_absents }}</td>
+                    <td class="text-success">+{{ report.total_bonus }}</td>
+                    <td class="text-danger">-{{ report.total_penalty }}</td>
+                    <td><strong>₨ {{ report.final_salary }}</strong></td>
+                    <td><i class="bi bi-chevron-down toggle-icon text-secondary"></i></td>
+                </tr>
 
-                                            <!-- ✅ Responsive Tooltip for Penalties -->
-                                            <td class="text-danger"
-                                                {% if day.penalty_details %}
-                                                    data-bs-toggle="tooltip"
-                                                    data-bs-html="true"
-                                                    data-bs-placement="top"
-                                                    title="
-                                                    {% for p in day.penalty_details %}
-                                                        💰 <strong>{{ p.amount }}</strong> — {{ p.reason }}<br>
-                                                        <small>👤 Added by: {{ p.added_by }}</small><br>
-                                                    {% endfor %}
-                                                    ">
-                                                {% endif %}
-                                                {% if day.penalty and day.penalty > 0 %}
-                                                    -{{ day.penalty }}
-                                                {% else %}
-                                                    0
-                                                {% endif %}
-                                            </td>
-
-                                            <td>
-                                                {% if day.marker %}
-                                                    {{ day.marker.first_name }} {{ day.marker.last_name }}
-                                                {% else %}
-                                                    -
-                                                {% endif %}
-                                            </td>
-                                        </tr>
-                                        {% endfor %}
-                                    </tbody>
-                                </table>
+                <tr>
+                    <td colspan="9" class="p-0">
+                        <div class="collapse" id="details{{ loop.index }}">
+                            <div class="collapse-inner">
+                                <h6 class="fw-bold text-primary mb-2">📅 Daily Attendance — {{ report.month_name }}</h6>
+                                <div class="table-responsive">
+                                    <table class="table table-sm mb-0">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th>Date</th>
+                                                <th>Status</th>
+                                                <th>Bonus</th>
+                                                <th>Penalty</th>
+                                                <th>Marked by</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for day in report.daily_records %}
+                                            <tr>
+                                                <td>{{ day.date.strftime('%b %d, %Y') }}</td>
+                                                <td>
+                                                    {% if day.status == 'Present' %}
+                                                        <span class="text-success fw-semibold">Present</span>
+                                                    {% elif day.status == 'Late' %}
+                                                        <span class="text-warning fw-semibold">Late</span>
+                                                    {% elif day.status == 'Off' %}
+                                                        <span class="text-primary fw-semibold">Off</span>
+                                                    {% else %}
+                                                        <span class="text-danger fw-semibold">Absent</span>
+                                                    {% endif %}
+                                                </td>
+                                                <td>{{ day.bonus or 0 }}</td>
+                                                <td class="text-danger"
+                                                    {% if day.penalty_details %}
+                                                        data-bs-toggle="tooltip"
+                                                        data-bs-html="true"
+                                                        data-bs-placement="top"
+                                                        title="
+                                                        {% for p in day.penalty_details %}
+                                                            💰 <strong>{{ p.amount }}</strong> — {{ p.reason }}<br>
+                                                            <small>👤 Added by: {{ p.added_by }}</small><br>
+                                                        {% endfor %}
+                                                        ">
+                                                    {% endif %}
+                                                    {% if day.penalty and day.penalty > 0 %}
+                                                        -{{ day.penalty }}
+                                                    {% else %}
+                                                        0
+                                                    {% endif %}
+                                                </td>
+                                                <td>
+                                                    {% if day.marker %}
+                                                        {{ day.marker.first_name }} {{ day.marker.last_name }}
+                                                    {% else %}
+                                                        -
+                                                    {% endif %}
+                                                </td>
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Salary Breakdown -->
+    <div class="salary-box mt-5">
+        <h6>💰 Salary Breakdown</h6>
+        <div class="salary-item"><span>Base Salary</span><span>₨ {{ user.salary }}</span></div>
+        <div class="salary-item"><span>Travel Allowance</span><span>₨ {{ user.travel_allowance_amount or 0 }}</span></div>
+        <div class="salary-item"><span>Late Deductions</span><span>-₨ {{ totals.total_lates * 400 }}</span></div>
+        <div class="salary-item"><span>Bonuses</span><span>+₨ {{ totals.total_bonus or 0 }}</span></div>
+        <div class="salary-item"><span>Penalties</span><span>-₨ {{ totals.total_penalty or 0 }}</span></div>
+        <div class="salary-item fw-bold text-success"><span>Final Salary</span><span>₨ {{ totals.final_salary }}</span></div>
+    </div>
 </div>
-
-<!-- Salary Breakdown -->
-<div class="salary-box mt-5">
-    <h6>💰 Salary Breakdown</h6>
-    <div class="salary-item"><span>Base Salary</span><span>₨ {{ user.salary }}</span></div>
-    <div class="salary-item"><span>Travel Allowance</span><span>₨ {{ user.travel_allowance_amount or 0 }}</span></div>
-    <div class="salary-item"><span>Late Deductions</span><span>-₨ {{ totals.total_lates * 400 }}</span></div>
-    <div class="salary-item"><span>Bonuses</span><span>+₨ {{ totals.total_bonus or 0 }}</span></div>
-    <div class="salary-item"><span>Penalties</span><span>-₨ {{ totals.total_penalty or 0 }}</span></div>
-    <div class="salary-item fw-bold text-success"><span>Final Salary</span><span>₨ {{ totals.final_salary }}</span></div>
-</div>
-
-
-</div>
-
-<!-- ✅ Bootstrap tooltip activation -->
 
 <script>
 document.addEventListener('DOMContentLoaded', function () {
+    // Initialize tooltips
     const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
     tooltipTriggerList.map(function (tooltipTriggerEl) {
         return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+
+    // Toggle icon for expand/collapse
+    const expandRows = document.querySelectorAll('.expand-row');
+    expandRows.forEach(row => {
+        const icon = row.querySelector('.toggle-icon');
+        row.addEventListener('click', () => {
+            const collapseEl = document.querySelector(row.dataset.bsTarget);
+            const isShown = collapseEl.classList.contains('show');
+            if (isShown) {
+                icon.classList.remove('bi-chevron-up');
+                icon.classList.add('bi-chevron-down');
+            } else {
+                icon.classList.remove('bi-chevron-down');
+                icon.classList.add('bi-chevron-up');
+            }
+        });
     });
 });
 </script>

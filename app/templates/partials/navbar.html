@@ -1,96 +1,46 @@
 <style>
-/* ✅ Unified, automatic responsive navbar */
+/* ----------------- Navbar & Sidebar Overlay ----------------- */
 .navbar {
   font-family: 'Times New Roman', Times, serif;
   transition: all 0.3s ease;
-  z-index: 1050;
+  z-index: 3000 !important;
 }
 
 /* Brand */
-.navbar .navbar-brand {
-  font-size: 1.1rem;
-  white-space: nowrap;
-}
+.navbar .navbar-brand { font-size: 1.1rem; white-space: nowrap; }
 
 /* Text & Links */
-.navbar .text-light,
-.navbar .nav-link {
-  font-size: 0.95rem;
-  white-space: nowrap;
-}
+.navbar .text-light, .navbar .nav-link { font-size: 0.95rem; white-space: nowrap; }
+.navbar .nav-link i { margin-right: 4px; }
 
-.navbar .nav-link i {
-  margin-right: 4px;
-}
+/* Padding for fixed-top navbar */
+body { padding-top: 56px; }
 
-/* ✅ Padding for fixed-top navbar */
-body {
-  padding-top: 8px; /* ensures content doesn’t hide behind navbar */
-}
-
-/* ✅ Smooth scaling for tablets and medium devices */
-@media (max-width: 992px) {
-  .navbar .navbar-brand {
-    font-size: 1rem;
-  }
-  .navbar .text-light,
-  .navbar .nav-link {
-    font-size: 0.85rem;
-  }
-  .navbar .btn,
-  .navbar .nav-link {
-    padding: 4px 8px !important;
-  }
-  body {
-    padding-top: 64px;
-  }
-}
-
-/* ✅ Very small screen optimization (phones) */
-@media (max-width: 576px) {
-  .navbar {
-    padding: 6px 10px;
-  }
-  .navbar .navbar-brand {
-    font-size: 0.95rem;
-  }
-  .navbar .text-light,
-  .navbar .nav-link {
-    font-size: 0.8rem;
-  }
-  .navbar .container-fluid {
-    flex-wrap: wrap;
-    text-align: center;
-  }
-  .navbar .d-flex {
-    flex-wrap: wrap;
-    justify-content: center;
-  }
-  body {
-    padding-top: 68px;
-  }
-}
-
-/* ✅ Sidebar states */
+/* Sidebar overlay styles for mobile */
 .expanded-mobile {
-  transform: translateX(0);
+  transform: translateX(0) !important;
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 100%;
+  width: 200px; /* expanded width */
   z-index: 2000;
+  box-shadow: 2px 0 12px rgba(0,0,0,0.25);
+  background: var(--sidebar-bg, #0f1724);
+  transition: transform 0.3s ease, width 0.3s ease;
 }
 
-/* ✅ Prevent scroll when sidebar is open */
-body.no-scroll {
-  overflow: hidden;
-}
+body.no-scroll { overflow: hidden; }
 
-/* ✅ Keep navbar above all */
-.navbar {
-  z-index: 3000 !important;
+/* Desktop: keep normal margins */
+@media (min-width: 768px) {
+  .expanded-mobile { transform: translateX(0) !important; position: relative; box-shadow: none; }
 }
 </style>
 
 <nav class="navbar navbar-dark bg-dark fixed-top shadow-sm py-2">
   <div class="container-fluid d-flex justify-content-between align-items-center">
-    
+
     <!-- Left side -->
     <div class="d-flex align-items-center">
       <!-- Mobile Sidebar Toggle -->
@@ -113,16 +63,35 @@ body.no-scroll {
 </nav>
 
 <script>
-/* ✅ Sidebar toggle functionality */
 document.addEventListener("DOMContentLoaded", () => {
   const sidebar = document.getElementById("sharedSidebar");
   const toggleBtn = document.getElementById("sidebarToggleMobile");
   const body = document.body;
 
   if (toggleBtn && sidebar) {
-    toggleBtn.addEventListener("click", () => {
+    toggleBtn.addEventListener("click", (e) => {
+      e.stopPropagation(); // prevent immediate closing
       sidebar.classList.toggle("expanded-mobile");
-      body.classList.toggle("no-scroll"); // Prevent background scrolling
+      body.classList.toggle("no-scroll");
+    });
+
+    // Close sidebar when clicking outside
+    document.addEventListener("click", (e) => {
+      if (window.innerWidth <= 768 && sidebar.classList.contains("expanded-mobile")) {
+        const isClickInside = sidebar.contains(e.target) || toggleBtn.contains(e.target);
+        if (!isClickInside) {
+          sidebar.classList.remove("expanded-mobile");
+          body.classList.remove("no-scroll");
+        }
+      }
+    });
+
+    // Optional: close sidebar on resize > 768
+    window.addEventListener("resize", () => {
+      if (window.innerWidth > 768 && sidebar.classList.contains("expanded-mobile")) {
+        sidebar.classList.remove("expanded-mobile");
+        body.classList.remove("no-scroll");
+      }
     });
   }
 });

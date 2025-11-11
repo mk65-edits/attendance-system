@@ -504,7 +504,7 @@ def reset_password_alias():
 @supervisor_bp.route('/settings', methods=['GET', 'POST'])
 @login_required
 def profile_pass():
-    """supervisor password reset route"""
+    """Supervisor password reset route"""
     if current_user.role != 'supervisor':
         flash("Unauthorized access.", "danger")
         return redirect(url_for('auth.logout'))
@@ -514,30 +514,35 @@ def profile_pass():
         new_password = request.form.get('new_password')
         confirm_new_password = request.form.get('confirm_new_password')
 
-        # ✅ Verify current password
+        # Verify current password
         if not current_user.check_password(current_password):
             flash("Current password is incorrect.", "danger")
             return redirect(url_for('supervisor.profile_pass'))
 
-        # ✅ Check if new passwords match
+        # Check if new passwords match
         if new_password != confirm_new_password:
             flash("New passwords do not match.", "warning")
             return redirect(url_for('supervisor.profile_pass'))
 
-        # ✅ Prevent using same password again
+        # Prevent using same password again
         if current_user.check_password(new_password):
             flash("New password cannot be the same as your current one.", "warning")
             return redirect(url_for('supervisor.profile_pass'))
 
-        # ✅ Update password using model’s method
-        current_user.set_password(new_password)
-        db.session.commit()
+        try:
+            # Update password using model’s method
+            current_user.set_password(new_password)
+            db.session.flush()   # ensures SQLAlchemy detects change
+            db.session.commit()
+            flash("✅ Password updated successfully!", "success")
+        except Exception as e:
+            db.session.rollback()
+            flash(f"Error updating password: {str(e)}", "danger")
+            return redirect(url_for('supervisor.profile_pass'))
 
-        flash("✅ Password updated successfully!", "success")
         return redirect(url_for('supervisor.profile_pass'))
 
     return render_template('supervisor/profile_pass.html')
-
 
 
 @supervisor_bp.route("/reports")
